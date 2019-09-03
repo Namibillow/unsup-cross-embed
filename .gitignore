@@ -1,0 +1,12 @@
+# ignore data
+data/
+baselines/
+
+.vscode/
+
+.ipynb_checkpoints/
+
+.DS_Store
+__pycache__/
+*.py[cod]
+*$py.class
