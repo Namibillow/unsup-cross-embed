@@ -1,7 +1,7 @@
 from logger import setup_logging
 import os 
 from pathlib import Path
-from utils import read_json, write_json
+from utils.utils import read_json, write_json
 
 class ConfigParser:
     def __init__(self, args, options="", timestamp=True):
