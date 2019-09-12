@@ -3,6 +3,7 @@ from pathlib import Path
 import re 
 
 from sacremoses import MosesTokenizer
+import MeCab
 
 class Universal:
     def __init__(self, lang, file_path, min_freq, max_words, save_path):
@@ -35,10 +36,12 @@ class Universal:
     def lowercase(self, text):
         pass
 
+    def save_data(self):
+        pass
 
 class English(Universal):
     def tokenize(self):
-        mt = MosesTokenizer(lnag=en)
+        self.mt = MosesTokenizer(lnag=en)
 
 class German(Universal):
     def tokenize(self):
@@ -57,7 +60,10 @@ class Finnish(Universal):
         mt = MosesTokenizer(lang=fi)
 
 class Japanese(Universal):
-    pass
+    def tokenize(self):
+        self.tagger = MeCab.Tagger()
+    
+
 
 class Russian(Universal):
     def tokenize(self):
