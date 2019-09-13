@@ -1,74 +1,80 @@
 from collections import Counter 
 from pathlib import Path
+import random 
 import re 
 
 from sacremoses import MosesTokenizer
 import MeCab
 
 class Universal:
-    def __init__(self, lang, file_path, min_freq, max_words, save_path):
+    def __init__(self, lang, file_path, min_freq, max_words, num_sent, save_path):
         self.lang = lang 
         self.file_path = Path(file_path)
         self.min_freq = min_freq
         self.max_words = max_words
+        self.num_sent = num_sent
         self.save_path = Path(save_path)
         self.save_path.mkdir(parents=True, exist_ok=True)
 
         print(f"building dictionary for {self.lang}...")
 
-    def read_corpus(self):
+    def read_corpus(self, seed=22):
+        """
+        output:
+            sentences 
+                - a list of sentences read from a txt file
+        """
+        count = 0
         with file_path.open(self.file_path) as file:
-            # Change split if the dataset is not indexed per sentence
-            sentences = [sentence.split("\t",1)[1].strip() for sentence in file]
- 
-    def remove_tags(self):
+            sentences = [sentence.strip() for sentence in file]
+        
+        # shuffle the list to randomize
+        random.seed(seed)
+        random.shuffle(sentences)
+        
+        return sentences[:self.num_sent]
+
+    def remove_unicode(self, sentence):
         pass
 
-    def remove_whitespace(self):
-        pass
-
-    def remove_unicode(self):
-        pass
-
-    def remove_integers(self):
-        pass
-
-    def lowercase(self, text):
+    def remove_integers(self, sentence):
         pass
 
     def save_data(self):
-        pass
+        info_file_name = self.lang + "_info.txt"
+        info_file_path = self.save_path / info_file_name
 
-class English(Universal):
-    def tokenize(self):
-        self.mt = MosesTokenizer(lnag=en)
+        with info_file_path.open(mode="w") as f:
+            f.write(f"Language: {self.lang} \n")
+            f.write(f"Original file path: {self.file_path}")
+        
+        vocab_file_name = self.lang + ".vocab_dict"
+        vocab_file_path = self.save_path / vocab_file_name
 
-class German(Universal):
-    def tokenize(self):
-        mt = MosesTokenizer(lang=de)
+    def text_process(self, senntence):
+        # Remove URLs
+        sentence = re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', '',sentence)
 
-class French(Universal):
-    def tokenize(self):
-        mt = MosesTokenizer(lang=fr) 
+        # Remove Emails 
+        sentence = re.sub(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", "", sentence)
 
-class Czech(Unversal):
-    def tokenize(self):
-        mt = MosesTokenizer(lang=cs)
+        # Lower Sentence
+        sentence = sentence.lower()
 
-class Finnish(Universal):
-    def tokenize(self):
-        mt = MosesTokenizer(lang=fi)
+        sentence = remove_unicode(sentence)
+        
+        sentence = remove_integers(sentence)
+
+        return sentence 
+
+    def tokenize(self, corpus):
+        mt = MosesTokenizer(lang=self.lang)
+
+        for sentence in corpus:
+            sentence = 
+            tokenized = mt.tokenize(sentence, return_str=True)
 
 class Japanese(Universal):
-    def tokenize(self):
+    def tokenize(self, corpus):
         self.tagger = MeCab.Tagger()
     
-
-
-class Russian(Universal):
-    def tokenize(self):
-        mt = MosesTokenizer(lang=ru)
-
-class Spanish(Universal):
-    def tokenize(self):
-        mt = MosesTokenizer(lang=es) 

@@ -1,13 +1,11 @@
 import argparse
 from collections import namedtuple 
 
-from utils.preprocess_utils import *
+from utils.preprocess_utils import Universal, Japanese
 
 """
 Handles text processing 
 """
-
-languages = {"en": English, "deu": German, "fra": French, "rus": Russian, "ces": Czech, "fin": Finnish, "jpn": Japanese, "spa": Spanish}
 
 if __name__ == "__main__":
     
@@ -38,6 +36,13 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "-SENT_LEN",
+        type=int,
+        default=50000,
+        help="sentences sizes"
+    )
+
+    parser.add_argument(
         "-MAX_WORDS",
         type=int,
         default=200000,
@@ -55,15 +60,23 @@ if __name__ == "__main__":
 
     assert len(args.LANG) == len(args.FILE_PATH) == len(args.MIN_FREQ)
 
-    Data = namedtuple("Data","language_name file_path min_freq max_words save_path") 
+    Data = namedtuple("Data","language_name file_path min_freq max_words num_sent save_path") 
     
     data = [ Data(language_name=lang, file_path=args.FILE_PATH[ind], min_freq=args.MIN_FREQ[ind], \
-        max_words=args.MAX_WORDS, save_path=args.SAVE_PATH+"/"+lang) for ind, lang in enumerate(args.LANG)]
+        max_words=args.MAX_WORDS, num_sent=args.SENT_LEN, save_path=args.SAVE_PATH+"/"+lang) for ind, lang in enumerate(args.LANG)]
 
     for d in data:
-        languages[d.language_name](*d)
+        if language_name == "jpn":
+            language = Japanese(*d)
+        else:
+            language = Universal(*d)
 
+        corpus = language.read_corpus()
+        tokenized_corpus = language.tokenize(corpus)
 
-    #############################\
+        # later tokenized_corpus needs to be saved in a file
+        language.save_data()
+
+    #############################
     # Example run: 
-    # python3 preprocess.py -LANG en sp -FILE_PATH data/hello data/hola -MIN_FREQ 4 4 -MAX_WORDS 200 -SAVE_PATH new
+    # python3 preprocess.py -LANG en sp -FILE_PATH data/en data/sp -MIN_FREQ 4 4 -MAX_WORDS 200 -SAVE_PATH data/processed_data
