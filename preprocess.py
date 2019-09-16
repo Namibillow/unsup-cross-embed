@@ -2,7 +2,6 @@ import argparse
 from collections import namedtuple 
 
 from utils.preprocess_utils import Universal, Japanese
-
 """
 Handles text processing 
 """
@@ -45,7 +44,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-MAX_WORDS",
         type=int,
-        default=200000,
+        default=70000,
         help="maximum count of vocabulary"
     )
 
@@ -72,7 +71,13 @@ if __name__ == "__main__":
             language = Universal(*d)
 
         corpus = language.read_corpus()
+
         tokenized_corpus = language.tokenize(corpus)
+        
+        lang_dictionary = Dictionary(d.lang, d.max_words, d.min_freq, tokenized_corpus)
+
+        lang_dictionary.build_vocab_dict()
+
 
         # later tokenized_corpus needs to be saved in a file
         language.save_data()
