@@ -2,6 +2,8 @@ import argparse
 from collections import namedtuple 
 
 from utils.preprocess_utils import Universal, Japanese
+from utils.build_vocabs import Dictionary
+
 """
 Handles text processing 
 """
@@ -59,13 +61,16 @@ if __name__ == "__main__":
 
     assert len(args.LANG) == len(args.FILE_PATH) == len(args.MIN_FREQ)
 
-    Data = namedtuple("Data","language_name file_path min_freq max_words num_sent save_path") 
+    Data = namedtuple("Data","lang file_path min_freq max_words num_sent save_path") 
     
-    data = [ Data(language_name=lang, file_path=args.FILE_PATH[ind], min_freq=args.MIN_FREQ[ind], \
+    data = [ Data(lang=lang, file_path=args.FILE_PATH[ind], min_freq=args.MIN_FREQ[ind], \
         max_words=args.MAX_WORDS, num_sent=args.SENT_LEN, save_path=args.SAVE_PATH+"/"+lang) for ind, lang in enumerate(args.LANG)]
 
+    print("*"*70)
+    print(f"Start processing the text... ")
+
     for d in data:
-        if language_name == "jpn":
+        if d.lang == "jpn":
             language = Japanese(*d)
         else:
             language = Universal(*d)
@@ -77,11 +82,13 @@ if __name__ == "__main__":
         lang_dictionary = Dictionary(d.lang, d.max_words, d.min_freq, tokenized_corpus)
 
         lang_dictionary.build_vocab_dict()
-
+        lang_dictionary.vectorize(tokenized_corpus)
 
         # later tokenized_corpus needs to be saved in a file
-        language.save_data()
+        language.save_data(tokenized_corpus, lang_dictionary.dataset, lang_dictionary.vocabulary)
 
+    print("Successfully processed the text.")
+    print("*"*70)
     #############################
     # Example run: 
     # python3 preprocess.py -LANG en sp -FILE_PATH data/en data/sp -MIN_FREQ 4 4 -MAX_WORDS 200 -SAVE_PATH data/processed_data
