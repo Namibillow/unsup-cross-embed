@@ -1,6 +1,10 @@
-from logger import setup_logging
-import os 
+import os
+import logging
 from pathlib import Path
+from functools import reduce, partial
+from operator import getitem
+from datetime import datetime
+# from logger import setup_loggin
 from utils.utils import read_json, write_json
 
 class ConfigParser:
@@ -14,6 +18,14 @@ class ConfigParser:
 
         # load json file as python dictionary 
         config = read_json(self.cfg_fname)
+
+        config["data"] = args.data
+        config["lang"] = args.lang
+        config["data_prefix"] = args.data_prefix
+
+        assert len(config["lang"]) == len(config["data_prefix"])
+
+        self.num_lang = len(config["lang"])
 
         # load config file and apply custom cli options
         self._config = _update_config(config, options, args)
@@ -35,7 +47,7 @@ class ConfigParser:
         write_json(self.config, self.save_dir / "config.json")
 
         # configure logging module
-        setup_logging(self.log_dir)
+        # setup_logging(self.log_dir)
         self.log_levels = {
             0: logging.WARNING,
             1: logging.INFO,

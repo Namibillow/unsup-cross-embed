@@ -4,10 +4,7 @@ import collections
 import torch 
 
 from parse_config import ConfigParser
-
-def main(config):
-    pass
-
+from utils.utils import load_data
 
 if __name__ == "__main__": 
     args = argparse.ArgumentParser(description="Train for CLWE")
@@ -24,10 +21,25 @@ if __name__ == "__main__":
         "-d", 
         "--data",
         type=str,
-        nargs="+",
         default=None,
         required=True,
         help="data file path (can be multiple)"
+    )
+
+    args.add_argument(
+        "--lang",
+        type=str,
+        nargs="+",
+        default=None,
+        help="name of the language"
+    )
+
+    args.add_argument(
+        "--data_prefix",
+        type=str,
+        nargs="+",
+        default=None,
+        help="file name not including extension. eg: en_50k"
     )
 
     args.add_argument(
@@ -45,5 +57,12 @@ if __name__ == "__main__":
         CustomArgs(['--bs', '--batch_size'], type=int, target=('batch_size'))
     ]
     config = ConfigParser(args, options)
-    
-    main(config)
+
+    # get data 
+    for i in range(config.num_lang):
+        vocab, dataset = load_data(config['data'], config["lang"][i], config["data_prefix"][i])
+
+
+    ################################
+    # Test run 
+    # python3 train.py -c parameters.json -d data/processed_data --lang en --data_prefix en_50k -s data/
