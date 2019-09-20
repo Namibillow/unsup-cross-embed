@@ -53,7 +53,7 @@ class Dictionary:
         idx = freq >= self.min_freq
         vocab = words[idx].tolist()
 
-        print(f"Vocabulary count: {len(wordFreq)}/{self.max_vocab}")
+        print(f"Vocabulary count: {len(vocab)}/{self.max_vocab}")
 
         vocab = vocab[:self.max_vocab+1]
                 

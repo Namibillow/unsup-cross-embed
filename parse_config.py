@@ -31,12 +31,13 @@ class ConfigParser:
         self._config = _update_config(config, options, args)
 
         # set save directory where trained embedding and log will be saved
-        save_dir = Path(args.save)
+        save_dir = Path(args.save) / ("_".join(config["lang"])
 
         timestamp = datetime.now().strftime(r'%m%d_%H%M%S') if timestamp else ''
 
         exper_name = self.config['name']
 
+        print(f"Result will be saved in {save_dir}")
         self._save_dir = save_dir / 'embed' / exper_name / timestamp
         self._log_dir = save_dir / 'log' / exper_name / timestamp
 

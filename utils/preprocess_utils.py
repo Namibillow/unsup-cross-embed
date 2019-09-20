@@ -122,6 +122,16 @@ class Universal:
         return tokenized_corpus
 
 class Japanese(Universal):
+    """ tokenize Japanese corpus """
     def tokenize(self, corpus):
-        self.tagger = MeCab.Tagger()
+
+        wakati = MeCab.Tagger()
+
+        for sentence in corpus:
+            sentence = self.text_preprocess(sentence)
+            # return a list of tokenized words
+            tokenized_sent = wakati.parse(sentence)
+            tokenized_corpus.append(tokenized_sent)
+
+        return tokenized_corpus
     
