@@ -6,6 +6,7 @@ import re
 
 import MeCab
 from sacremoses import MosesTokenizer
+from polyglot.text import Text 
 
 class Universal:
     def __init__(self, lang, file_path, min_freq, max_words, num_sent, save_path):
@@ -111,13 +112,21 @@ class Universal:
             corpus: list of sentences
 
         """
-        mt = MosesTokenizer(lang=self.lang)
-        tokenized_corpus = []
-        for sentence in corpus:
-            sentence = self.text_preprocess(sentence)
-            # return a list of tokenized words
-            tokenized_sent = mt.tokenize(sentence)
-            tokenized_corpus.append(tokenized_sent)
+        if tokenizer="moses":
+
+            mt = MosesTokenizer(lang=self.lang)
+            tokenized_corpus = []
+            for sentence in corpus:
+                sentence = self.text_preprocess(sentence)
+                # return a list of tokenized words
+                tokenized_sent = mt.tokenize(sentence)
+                tokenized_corpus.append(tokenized_sent)
+
+        else:
+            tokenized_corpus = []
+            for sentence in corpus:
+                text = Text(sentence)
+                tokenized_corpus.append(list(text.words()))
 
         return tokenized_corpus
 
@@ -139,5 +148,4 @@ class Japanese(Universal):
             tokenized_corpus.append([x for x in tokenized_sent if x != ""])
 
         return tokenized_corpus
-    
     
