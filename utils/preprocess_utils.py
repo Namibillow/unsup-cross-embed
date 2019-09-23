@@ -4,8 +4,8 @@ import pickle
 import random 
 import re 
 
-from sacremoses import MosesTokenizer
 import MeCab
+from sacremoses import MosesTokenizer
 
 class Universal:
     def __init__(self, lang, file_path, min_freq, max_words, num_sent, save_path):
@@ -125,13 +125,19 @@ class Japanese(Universal):
     """ tokenize Japanese corpus """
     def tokenize(self, corpus):
 
-        wakati = MeCab.Tagger()
+        mt = MeCab.Tagger('-d /usr/local/lib/mecab/dic/mecab-ipadic-neologd')
 
         for sentence in corpus:
             sentence = self.text_preprocess(sentence)
-            # return a list of tokenized words
-            tokenized_sent = wakati.parse(sentence)
-            tokenized_corpus.append(tokenized_sent)
+            
+            res = mt.parseToNode(sentence)
+            tokenized_sent = []
+            while res:
+                tokenized_sent.append(res.surface)
+                res = res.next
+            
+            tokenized_corpus.append([x for x in tokenized_sent if x != ""])
 
         return tokenized_corpus
+    
     
