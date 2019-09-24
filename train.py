@@ -6,6 +6,26 @@ import torch
 from parse_config import ConfigParser
 from utils.train_utils import load_data
 
+def main_train(config): 
+    
+    logger = config.get_logger('train')
+
+    vocabs = []
+    datasets = []
+    langs = [] 
+
+    for i in range(config.num_lang):
+        vocab, dataset = load_data(config['data'], config["lang"][i], config["data_prefix"][i])
+
+        vocabs.append(vocab)
+        datasets.append(dataset)
+        langs.append(config["lang"][i])
+
+    # generate minibatches 
+
+    # print("Number of mini-batches", len(dataset.batch_idx_list))
+
+
 if __name__ == "__main__": 
     args = argparse.ArgumentParser(description="Train for CLWE")
     
@@ -31,7 +51,7 @@ if __name__ == "__main__":
         type=str,
         nargs="+",
         default=None,
-        help="name of the language"
+        help="name of the language (must be in ISO 2 Letter Language Codes)"
     )
 
     args.add_argument(
@@ -39,7 +59,7 @@ if __name__ == "__main__":
         type=str,
         nargs="+",
         default=None,
-        help="file name not including extension. eg: en_50k"
+        help="file name not including extension. (eg: en_50k)"
     )
 
     args.add_argument(
@@ -53,24 +73,15 @@ if __name__ == "__main__":
     # custom cli options to modify configuration from default values give in config file
     CustomArgs = collections.namedtuple('CustomArgs', 'flags type target')
     options = [
-        CustomArgs(['--lr', '--learning_rate'], type=float, target=('optimizer', 'args', 'lr')),
-        CustomArgs(['--bs', '--batch_size'], type=int, target=('batch_size'))
+        CustomArgs(flags=['--lr', '--learning_rate'], type=float, target=('optimizer', 'args', 'lr')),
+        CustomArgs(flags=['--bs', '--batch_size'], type=int, target=('batch_size'))
     ]
     config = ConfigParser(args, options)
+ 
+    main_train(config)
 
-    # get data 
-    vocabs = []
-    datasets = []
-    langs = [] 
 
-    for i in range(config.num_lang):
-        vocab, dataset = load_data(config['data'], config["lang"][i], config["data_prefix"][i])
 
-        vocabs.append(vocab)
-        datasets.append(dataset)
-        langs.append(config["lang"][i])
-
-    # Train 
 
     ################################
     # Test run 

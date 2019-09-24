@@ -4,11 +4,20 @@ from pathlib import Path
 from functools import reduce, partial
 from operator import getitem
 from datetime import datetime
-# from logger import setup_loggin
+
+from logger import setup_loggin
 from utils.utils import read_json, write_json
 
 class ConfigParser:
-    def __init__(self, args, options="", timestamp=True):
+    def __init__(self, args, options=""):
+        """
+        - class to parse configuration json file. Handles hyperparameters for training, initializations of modules, checkpoint saving
+        and logging module.
+
+        input:
+            args: Dict containing configurations, hyperparameters for training. contents of `parameters.json` file for example.
+            options: Dict keychain:value, specifying position values to be replaced from config dict.
+        """
         # parse default and custom cli options
         for opt in options:
             args.add_argument(*opt.flags, default=None, type=opt.type)
@@ -19,9 +28,9 @@ class ConfigParser:
         # load json file as python dictionary 
         config = read_json(self.cfg_fname)
 
-        config["data"] = args.data
-        config["lang"] = args.lang
-        config["data_prefix"] = args.data_prefix
+        config["data"] = args.data 
+        config["lang"] = args.lang 
+        config["data_prefix"] = args.data_prefix 
 
         assert len(config["lang"]) == len(config["data_prefix"])
 
@@ -31,13 +40,13 @@ class ConfigParser:
         self._config = _update_config(config, options, args)
 
         # set save directory where trained embedding and log will be saved
-        save_dir = Path(args.save) / ("_".join(config["lang"])
+        save_dir = Path(args.save) / ("_".join(config["lang"]))
 
-        timestamp = datetime.now().strftime(r'%m%d_%H%M%S') if timestamp else ''
+        timestamp = datetime.now().strftime(r'%m%d_%H%M%S') 
 
         exper_name = self.config['name']
 
-        print(f"Result will be saved in {save_dir}")
+        print(f"Result will be saved in {save_dir} \n")
         self._save_dir = save_dir / 'embed' / exper_name / timestamp
         self._log_dir = save_dir / 'log' / exper_name / timestamp
 
@@ -45,10 +54,10 @@ class ConfigParser:
         self.log_dir.mkdir(parents=True, exist_ok=True)
 
         # save updated config file to the checkpoint dir 
-        write_json(self.config, self.save_dir / "config.json")
+        write_json(self.config, self.save_dir / "parameters.json")
 
         # configure logging module
-        # setup_logging(self.log_dir)
+        setup_logging(self.log_dir)
         self.log_levels = {
             0: logging.WARNING,
             1: logging.INFO,

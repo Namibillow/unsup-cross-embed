@@ -172,3 +172,9 @@ class BiLSTM(nn.Module):
         # return forward_output.view(batch_size, seq_len, -1), backward_output.view(batch_size, seq_len, -1)
         
         return forward_output, backward_output
+
+    def set_device(self,is_cuda):
+        if is_cuda:
+            self.torch = torch.cuda
+        else:
+            self.torch = torch

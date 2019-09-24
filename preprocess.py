@@ -70,14 +70,19 @@ if __name__ == "__main__":
     print(f"Start processing the text... ")
 
     for d in data:
+        
         if d.lang == "jpn":
             language = Japanese(*d)
+            tokenizer = None
         else:
             language = Universal(*d)
+            # If language is Tamil or Turkish
+            tokenizer = "polyglot" if d.lang in ["ta","tr"] else "moses"
+                
 
         corpus = language.read_corpus()
 
-        tokenized_corpus = language.tokenize(corpus)
+        tokenized_corpus = language.tokenize(corpus, tokenizer)
         
         lang_dictionary = Dictionary(d.lang, d.max_words, d.min_freq, tokenized_corpus)
 
@@ -89,6 +94,8 @@ if __name__ == "__main__":
 
     print("Successfully processed the text.")
     print("*"*70)
+
+    
     #############################
     # Example run: 
     # python3 preprocess.py -LANG en sp -FILE_PATH data/en data/sp -MIN_FREQ 4 4 -MAX_WORDS 200 -SAVE_PATH data/processed_data

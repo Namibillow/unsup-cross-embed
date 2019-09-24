@@ -31,5 +31,5 @@ def load_data(data_path, data_lang, data_prefix):
 
 	return dataset, vocab 
 
-    def get_minibatches():
-        pass
+def get_minibatches():
+	pass

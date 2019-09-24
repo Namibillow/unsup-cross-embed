@@ -4,9 +4,14 @@ import pickle
 import random 
 import re 
 
-import MeCab
+# Tokenizers
+import MeCab # Japanese 
+from polyglot.text import Text # Tamil, Turkish
 from sacremoses import MosesTokenizer
-from polyglot.text import Text 
+
+"""
+Utility class for preprocessing text
+"""
 
 class Universal:
     def __init__(self, lang, file_path, min_freq, max_words, num_sent, save_path):
@@ -104,7 +109,7 @@ class Universal:
 
         return sentence 
 
-    def tokenize(self, corpus):
+    def tokenize(self, corpus, tokenizer="moses"):
         """
         - tokenize sentences 
 
@@ -113,7 +118,6 @@ class Universal:
 
         """
         if tokenizer="moses":
-
             mt = MosesTokenizer(lang=self.lang)
             tokenized_corpus = []
             for sentence in corpus:
@@ -121,8 +125,7 @@ class Universal:
                 # return a list of tokenized words
                 tokenized_sent = mt.tokenize(sentence)
                 tokenized_corpus.append(tokenized_sent)
-
-        else:
+        elif tokenizer="polyglot":
             tokenized_corpus = []
             for sentence in corpus:
                 text = Text(sentence)
@@ -132,7 +135,7 @@ class Universal:
 
 class Japanese(Universal):
     """ tokenize Japanese corpus """
-    def tokenize(self, corpus):
+    def tokenize(self, corpus, tokenizer=None):
 
         mt = MeCab.Tagger('-d /usr/local/lib/mecab/dic/mecab-ipadic-neologd')
 

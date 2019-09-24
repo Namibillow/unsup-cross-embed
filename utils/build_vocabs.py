@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd 
 
 """
-builds vocabulary 
+Prepares dataset for training by preprocessing and tokenize given data and build vocab dict
 """
 
 PAD, UNK, BOS_FWD, BOS_BWD, EOS = 0,1,2,3,4
@@ -22,10 +22,8 @@ class Dictionary:
 
     def build_vocab_dict(self):
         """
-        - 
-
+        - builds a vocabulary dictionary 
         """
-
         word2index = OrderedDict()
         index2word = OrderedDict()
 
@@ -53,7 +51,7 @@ class Dictionary:
         idx = freq >= self.min_freq
         vocab = words[idx].tolist()
 
-        print(f"Vocabulary count: {len(vocab)}/{self.max_vocab}")
+        # print(f"Vocabulary count: {len(vocab)}/{self.max_vocab}")
 
         vocab = vocab[:self.max_vocab+1]
                 
@@ -64,7 +62,7 @@ class Dictionary:
             index2word[index] = word
             index+=1
 
-        print(f"Vocaburaly length for {self.lang} including special tokens is {len(word2index)}")
+        print(f"Vocaburaly length for {self.lang} including special tokens is {len(word2index)} / {self.max_vocab}")
 
         special_tokens = {"PAD": PAD, "UNK": UNK, "BOS_FWD": BOS_FWD, "BOS_BWD": BOS_BWD, "EOS": EOS}
         
@@ -75,13 +73,16 @@ class Dictionary:
     
     
     def sentence2idxs(self, sentence):
+        """
+        - return a list of words which is converted to indexes
+        """
         idxs = [self.vocabulary.word2index[word] if word in self.vocabulary.word2index else UNK for word in sentence]
 
         return idxs
 
     def vectorize(self, tokenized_sentences):
         """
-        - returns vectorized (converts from words of lists to numbers of lists)
+        - return vectorized (converts from words of lists to numbers of lists)
         """
         ids = [self.sentence2idxs(sentence) for sentence in tokenized_sentences]
         lengths = [len(s) for s in ids]
@@ -93,9 +94,9 @@ class Dictionary:
 class Dataset():
     def __init__(self):
         """
-        variables:
-            vectorized_corpus:
-            tokenized_corpus:
+        input:
+            vectorized_corpus: a list of list of tokenized words which converted to indexes
+            tokenized_corpus: a lits of list of tokenized words
             length: a list of integers where each number represents length of the sentences
         """
         self.vectorized_corpus = []
