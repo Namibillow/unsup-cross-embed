@@ -71,7 +71,7 @@ if __name__ == "__main__":
 
     for d in data:
         
-        if d.lang == "jpn":
+        if d.lang == "ja": # japanese
             language = Japanese(*d)
             tokenizer = None
         else:

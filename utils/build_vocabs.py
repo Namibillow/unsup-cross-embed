@@ -112,11 +112,11 @@ class Dataset():
 class Vocabulary():
     def __init__(self):
         """
-        variables:
-            word2index:
-            index2word:
-            special_tokens:
-            vocab_len:
+        input:
+            word2index: dictionary where key is a word and value is the idnex
+            index2word: dictionary where key is index number and value is a word
+            special_tokens: tokens needed for training 
+            vocab_len: length of vocab
         """
         self.word2index = {}
         self.index2word = {}

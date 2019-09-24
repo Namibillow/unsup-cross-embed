@@ -4,10 +4,12 @@ import pickle
 import random 
 import re 
 
+import regex
+
 # Tokenizers
 import MeCab # Japanese 
 from polyglot.text import Text # Tamil, Turkish
-from sacremoses import MosesTokenizer
+from sacremoses import MosesTokenizer # rest of languages
 
 """
 Utility class for preprocessing text
@@ -94,7 +96,10 @@ class Universal:
 
     def text_preprocess(self, sentence):
         """
-        - perform a text processing 
+        - perform a text processing to clean text
+        
+        input:
+            sentence: a str
         """
         # Remove URLs
         sentence = re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', '',sentence)
@@ -102,10 +107,20 @@ class Universal:
         # Remove Emails 
         sentence = re.sub(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", "", sentence)
 
-        # Lower Sentence
+        # Lower the sentence
         sentence = sentence.lower()
 
-        # sentence = remove_unicode(sentence)
+        if self.lang in ["ja"]: # japanese
+            sentence = regex.sub(u"[^\r\n\p{Han}\p{Hiragana}\p{Katakana}ー。！？]", "", sentence)
+        elif self.lang in ["ta"]: # tamile
+            sentence = regex.sub(u"[^ \r\n\p{Tamil}.?!\-]", " ", sentence)
+        elif self.lang in ["ru"]: # russian
+            sentence = regex.sub(u"[^ \r\n\p{Cyrillic}.?!\-]", " ", sentence)
+        else: # english, german, spanish, french, finnish, czech, turkish
+            sentence = regex.sub(u"[^ \r\n\p{Latin}\-'‘’.?!]", " ", sentence)        
+    
+        # Common
+        sentence = regex.sub("[ ]{2,}", " ", sentence) # Squeeze spaces.
 
         return sentence 
 
@@ -117,7 +132,7 @@ class Universal:
             corpus: list of sentences
 
         """
-        if tokenizer="moses":
+        if tokenizer=="moses":
             mt = MosesTokenizer(lang=self.lang)
             tokenized_corpus = []
             for sentence in corpus:
@@ -125,7 +140,7 @@ class Universal:
                 # return a list of tokenized words
                 tokenized_sent = mt.tokenize(sentence)
                 tokenized_corpus.append(tokenized_sent)
-        elif tokenizer="polyglot":
+        elif tokenizer=="polyglot":
             tokenized_corpus = []
             for sentence in corpus:
                 text = Text(sentence)
@@ -139,6 +154,7 @@ class Japanese(Universal):
 
         mt = MeCab.Tagger('-d /usr/local/lib/mecab/dic/mecab-ipadic-neologd')
 
+        tokenized_corpus = []
         for sentence in corpus:
             sentence = self.text_preprocess(sentence)
             
