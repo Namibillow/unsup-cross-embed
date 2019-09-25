@@ -29,6 +29,7 @@ class Universal:
         print(f"building a dictionary for {self.lang}...")
 
 
+
     def read_corpus(self, seed=22):
         """
         - read corpus from a given file path 
@@ -42,6 +43,9 @@ class Universal:
         # shuffle the list to randomize
         random.seed(seed)
         random.shuffle(sentences)
+        
+        print(f"{self.lang} has total of {len(sentences)}/{self.num_sent} sentences")
+
         
         return sentences[:self.num_sent]
 
@@ -64,7 +68,10 @@ class Universal:
         with info_file_path.open(mode="w") as f:
             f.write(f"Language: {self.lang} \n")
             f.write(f"Original file path: {self.file_path} \n")
-            f.write(f"Number of sentences: {len(tokenized_corpus)}")
+            f.write(f"Number of sentences: {len(tokenized_corpus)}\n")
+            f.write(f"Total Vocabulary: {(vocabulary.vocab_len)}\n")
+            f.write(f"Minimum word frequency was set to {self.min_freq}\n")
+            f.write(f"Maximum word count was set to {self.max_words}\n")
         
         # example: en_50K.vocab_dict
         vocab_file_name = self.lang + "_" + num_sent + "K.vocab_dict"
@@ -132,19 +139,19 @@ class Universal:
             corpus: list of sentences
 
         """
+        tokenized_corpus = []
         if tokenizer=="moses":
             mt = MosesTokenizer(lang=self.lang)
-            tokenized_corpus = []
             for sentence in corpus:
                 sentence = self.text_preprocess(sentence)
                 # return a list of tokenized words
                 tokenized_sent = mt.tokenize(sentence)
                 tokenized_corpus.append(tokenized_sent)
         elif tokenizer=="polyglot":
-            tokenized_corpus = []
             for sentence in corpus:
-                text = Text(sentence)
-                tokenized_corpus.append(list(text.words()))
+                sentence = self.text_preprocess(sentence)
+                text = Text(sentence, hint_language_code=self.lang)
+                tokenized_corpus.append(list(text.words))
 
         return tokenized_corpus
 

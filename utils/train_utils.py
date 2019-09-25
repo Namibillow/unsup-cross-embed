@@ -36,3 +36,6 @@ def get_minibatches():
 
 def pad_sequence():
 	pass
+
+def pad_special_tokens():
+	pass # add <BOS> <EOS> 

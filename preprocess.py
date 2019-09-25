@@ -1,8 +1,8 @@
 import argparse
 from collections import namedtuple 
 
-from utils.preprocess_utils import Universal, Japanese
 from utils.build_vocabs import Dictionary
+from utils.preprocess_utils import Universal, Japanese
 
 """
 Handles text processing 
@@ -59,7 +59,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    assert len(args.LANG) == len(args.FILE_PATH) == len(args.MIN_FREQ)
+    assert len(args.LANG) == len(args.FILE_PATH) == len(args.MIN_FREQ), "given number of languages, file_pathes, min_freq must be equal"
 
     Data = namedtuple("Data","lang file_path min_freq max_words num_sent save_path") 
     
@@ -92,10 +92,15 @@ if __name__ == "__main__":
         # later tokenized_corpus needs to be saved in a file
         language.save_data(tokenized_corpus, lang_dictionary.dataset, lang_dictionary.vocabulary)
 
+        print("*"*70)
+
     print("Successfully processed the text.")
-    print("*"*70)
 
     
     #############################
     # Example run: 
     # python3 preprocess.py -LANG en sp -FILE_PATH data/en data/sp -MIN_FREQ 4 4 -MAX_WORDS 200 -SAVE_PATH data/processed_data
+
+    # python3 preprocess.py -LANG ja ta tr -FILE_PATH data/different_domain/jpn_wikipedia_2016_1M data/different_domain/ data/different_domain/ -MIN_FREQ -MAX_WORDS -SENT_LEN 100000 -SAVE_PATH data/processed_data
+    # 
+    # python3 preprocess.py -LANG  
