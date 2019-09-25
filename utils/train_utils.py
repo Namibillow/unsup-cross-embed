@@ -33,3 +33,6 @@ def load_data(data_path, data_lang, data_prefix):
 
 def get_minibatches():
 	pass
+
+def pad_sequence():
+	pass
