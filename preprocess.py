@@ -100,7 +100,3 @@ if __name__ == "__main__":
     #############################
     # Example run: 
     # python3 preprocess.py -LANG en sp -FILE_PATH data/en data/sp -MIN_FREQ 4 4 -MAX_WORDS 200 -SAVE_PATH data/processed_data
-
-    # python3 preprocess.py -LANG ja ta tr -FILE_PATH data/different_domain/jpn_wikipedia_2016_1M data/different_domain/ data/different_domain/ -MIN_FREQ -MAX_WORDS -SENT_LEN 100000 -SAVE_PATH data/processed_data
-    # 
-    # python3 preprocess.py -LANG  
