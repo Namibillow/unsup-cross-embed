@@ -4,7 +4,7 @@ import collections
 import torch 
 
 from parse_config import ConfigParser
-from utils.train_utils import load_data
+from utils.train_utils import load_data, oversampling, mini_batchfy
 
 def main_train(config): 
     
@@ -13,18 +13,34 @@ def main_train(config):
     vocabs = []
     datasets = []
     langs = [] 
+    logger.info("SRC LANG : %s", config["lang"][0])
+    logger.info("TGT LANG : %s", config["lang"][1])
+
+    logger.info("Writing this to a log")
 
     for i in range(config.num_lang):
-        vocab, dataset = load_data(config['data'], config["lang"][i], config["data_prefix"][i])
+        # logger.debug(f"Loading {config["data_prefix"][i]} dataset...")
+        dataset, vocab = load_data(config['data'], config["lang"][i], config["data_prefix"][i])
 
         vocabs.append(vocab)
         datasets.append(dataset)
         langs.append(config["lang"][i])
 
+    assert len(datasets) == 2, "Sorry, we only supports cross-lingual embedding at time."
+
+    # check for needs of oversampling 
+    if len(datasets[0].tokenized_corpus) != len(datasets[1].tokenized_corpus):
+        oversampling(datasets)
+
+       
     # generate minibatches 
+    data = mini_batchfy
 
     # print("Number of mini-batches", len(dataset.batch_idx_list))
-
+    
+    
+    # Save the embedding 
+    # config.save_file()
 
 if __name__ == "__main__": 
     args = argparse.ArgumentParser(description="Train for CLWE")
@@ -76,10 +92,10 @@ if __name__ == "__main__":
         CustomArgs(flags=['--lr', '--learning_rate'], type=float, target=('optimizer', 'args', 'lr')),
         CustomArgs(flags=['--bs', '--batch_size'], type=int, target=('batch_size'))
     ]
+
     config = ConfigParser(args, options)
  
     main_train(config)
-
 
 
 

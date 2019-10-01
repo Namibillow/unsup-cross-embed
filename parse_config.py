@@ -5,7 +5,7 @@ from functools import reduce, partial
 from operator import getitem
 from datetime import datetime
 
-from utils.logger import setup_loggin
+from utils.logger import setup_logging
 from utils.utils import read_json, write_json
 
 class ConfigParser:
@@ -63,6 +63,10 @@ class ConfigParser:
             1: logging.INFO,
             2: logging.DEBUG
         }
+
+    def save_file(self, content, fname):
+
+        write_json(content, self.save_dir / fname)
 
     def __getitem__(self, name):
         return self.config[name]
