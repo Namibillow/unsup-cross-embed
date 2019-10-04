@@ -3,7 +3,7 @@ import pickle
 import random
 import numpy as np 
 
-def load_data(data_path, data_lang, data_prefix):
+def load_data(data_path, data_prefix):
 	"""
 		- Load the data from given data_path and data_prefix
 	"""
@@ -13,10 +13,10 @@ def load_data(data_path, data_lang, data_prefix):
 	data_path = data_prefix + ".dataset"
 	vocab_path = data_prefix + ".vocab_dict"
 
-	data_path = (file_path / data_lang / data_path).open(mode="rb")
+	data_path = (file_path / data_path).open(mode="rb")
 	dataset = pickle.load(data_path)
 
-	vocab_path = (file_path / data_lang / vocab_path).open(mode="rb")
+	vocab_path = (file_path / vocab_path).open(mode="rb")
 	vocab = pickle.load(vocab_path)
 
 	# for i in range(5):
@@ -39,29 +39,26 @@ def pad_special_tokens():
 	pass # add <BOS> <EOS> 
 
 
-def oversampling(datasets):
+def oversampling(src, tgt):
 	"""
 	- Randomly repeat some minority samples and balance the number of samples between the dataset 
 	"""
+	max_sent, less_sent = (src, tgt) if len(src.vectorized_corpus) > len(tgt.vectorized_corpus) else (tgt, src)
 
-	largest_corpus = np.argmax([len(datasets[i].tokenized_corpus) for i in range(len(datasets))])
-	max_sentence_num = len(datasets[largest_corpus].tokenized_corpus)
+	max_num_sent, less_num_sent = len(max_sent.vectorized_corpus), len(less_sent.vectorized_corpus)
 
-	for i in range(len(datasets)):
-		sentence_num = len(datasets[i].tokenized_corpus)
-		if max_sentence_num != sentence_num:
-			print("Perform oversampling")
-			print("max_sentence_num: ", max_sentence_num)
-			print("src lang" + str(i) + ": ", sentence_num)
-			rep = max_sentence_num // sentence_num
-			remainder = max_sentence_num % sentence_num
-			ramdom_idx = random.sample(range(sentence_num), remainder)
-			datasets[i].tokenized_corpus = augment_data(dataset[i].tokenized_corpus, rep, ramdom_idx)
-			datasets[i].lengths = augment_data(dataset[i].lengths, rep, ramdom_idx)
+	logger.debug("Max sentence:  %d", max_num_sent)
+	logger.debug("Less sentence: %d", less_num_sent)
 
-		dataset[i].lengths = np.array(dataset[i].lengths) # list -> numpy
+	repeat = max_num_sent // less_num_sent
+	remainder = max_num_sent % less_num_sent
+	random_idx = random.sample(range(less_num_sent), remainder)
 
-	return datasets[0], datasets[1]
+	less_sent.vectorized_corpus = augment_data(less_sent.vectorized_corpus, repeat, remainder, random_idx)
+	less_sent.length = augment_data(less_sent.length, rep, ramdom_idx)
+
+	return (max_sent, less_sent) if max_sent == src else (less_sent, max_sent)
+
 
 def augment_data(self,lines, rep, ramdom_idx):
         out = lines.copy()

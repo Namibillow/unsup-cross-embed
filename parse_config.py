@@ -28,19 +28,17 @@ class ConfigParser:
         # load json file as python dictionary 
         config = read_json(self.cfg_fname)
 
-        config["data"] = args.data 
-        config["lang"] = args.lang 
-        config["data_prefix"] = args.data_prefix 
+        config["src_data"] = args.src_data 
+        config["tgt_data"] = args.tgt_data 
 
-        assert len(config["lang"]) == len(config["data_prefix"])
-
-        self.num_lang = len(config["lang"])
+        config["src_data_prefix"] = args.src_data_prefix 
+        config["tgt_data_prefix"] = args.tgt_data_prefix 
 
         # load config file and apply custom cli options
         self._config = _update_config(config, options, args)
 
         # set save directory where trained embedding and log will be saved
-        save_dir = Path(args.save) / ("_".join(config["lang"]))
+        save_dir = Path(args.save) / ( config["src_data_prefix"] + "_" + config["tgt_data_prefix"])
 
         timestamp = datetime.now().strftime(r'%m%d_%H%M%S') 
 

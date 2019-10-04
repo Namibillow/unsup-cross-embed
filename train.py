@@ -2,9 +2,11 @@ import argparse
 import collections
 
 import torch 
+import numpy as np
 
 from parse_config import ConfigParser
 from utils.train_utils import load_data, oversampling, mini_batchfy
+from utils.data_loader import SentenceDataset, batchfy
 
 def main_train(config): 
     
@@ -13,31 +15,50 @@ def main_train(config):
     vocabs = []
     datasets = []
     langs = [] 
-    logger.info("SRC LANG : %s", config["lang"][0])
-    logger.info("TGT LANG : %s", config["lang"][1])
 
-    logger.info("Writing this to a log")
+    logger.info("SRC LANG : %s", config["src_data_prefix"])
+    logger.info("TGT LANG : %s", config["tgt_data_prefix"])
 
-    for i in range(config.num_lang):
-        # logger.debug(f"Loading {config["data_prefix"][i]} dataset...")
-        dataset, vocab = load_data(config['data'], config["lang"][i], config["data_prefix"][i])
+    logger.debug("-- loading dataset --")
+   
+    src_data, src_vocab = load_data(config["src_data"], config["src_data_prefix"])
+    tgt_data, tgt_vocab = load_data(config["tgt_data"], config["tgt_data_prefix"])
 
-        vocabs.append(vocab)
-        datasets.append(dataset)
-        langs.append(config["lang"][i])
+    src_data.vectorized_corpus = np.asarray(src_data.vectorized_corpus) 
+    tgt_data.vectorized_corpus = np.asarray(tgt_data.vectorized_corpus)
 
-    assert len(datasets) == 2, "Sorry, we only supports cross-lingual embedding at time."
+    src_data.length = np.asarray(src_data.length) 
+    tgt_data.length = np.asarray(tgt_data.length)
 
-    # check for needs of oversampling 
-    if len(datasets[0].tokenized_corpus) != len(datasets[1].tokenized_corpus):
-        oversampling(datasets)
+    logger.debug("-- finished loading dataset --")
 
-       
-    # generate minibatches 
-    data = mini_batchfy
+    # check for need of oversampling 
+    if len(src_data.tokenized_corpus) != len(tgt_data.tokenized_corpus):
+        logger.debug("-- oversampling will be performed --")
+        src_data, tgt_data = oversampling(src_data, tgt_data)
+        logger.debug("-- finished oversampling -- ")
 
-    # print("Number of mini-batches", len(dataset.batch_idx_list))
+    logger.debug("-- generating mini-batches of size %d -- ", config["batch_size"])
     
+    src_dataset = SentenceDataset(src_data.vectorized_corpus, src_data.length, config["batch_size"], src_vocab.special_tokens)
+    tgt_dataset = SentenceDataset(tgt_data.vectorized_corpus, tgt_data.length, config["batch_size"], tgt_vocab.special_tokens)
+
+    # src_batches = batchfy(dataset=src_dataset, batch_size=1) 
+    # tgt_batches = batchfy(dataset=tgt_dataset, batch_size=1)
+
+    logger.debug("-- total of %d batches are created --", len(src_dataset.bacth_idx_list))
+
+    logger.debug("-- building model: %s --", config["name"])
+
+    logger.debug("-- model is ready -- ")
+
+    if config["gpu_id"]:
+        logger.debug("-- GPU is used for the training --")
+
+    logger.debug("++ starting the training ++")
+    # model
+
+    # train
     
     # Save the embedding 
     # config.save_file()
@@ -53,29 +74,34 @@ if __name__ == "__main__":
         help="config file path (default:None)"
         )
 
-    args.add_argument(
-        "-d", 
-        "--data",
+    args.add_argument( 
+        "--src_data",
         type=str,
         default=None,
         required=True,
-        help="data file path (can be multiple)"
+        help="directory that contains preprocessed source dataset"
     )
 
     args.add_argument(
-        "--lang",
+        "--tgt_data",
         type=str,
-        nargs="+",
         default=None,
-        help="name of the language (must be in ISO 2 Letter Language Codes)"
+        required=True,
+        help="directory that contains preprocessed target dataset"
     )
 
     args.add_argument(
-        "--data_prefix",
+        "--src_data_prefix",
         type=str,
-        nargs="+",
         default=None,
-        help="file name not including extension. (eg: en_50k)"
+        help="src file name not including extension. (eg: en_50k)"
+    )
+
+    args.add_argument(
+        "--tgt_data_prefix",
+        type=str,
+        default=None,
+        help="tgt file name not including extension. (eg: ja_50k)"
     )
 
     args.add_argument(
