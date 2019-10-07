@@ -5,8 +5,9 @@ import torch
 import numpy as np
 
 from parse_config import ConfigParser
-from utils.train_utils import load_data, oversampling, mini_batchfy
+from utils.train_utils import load_data, oversampling
 from utils.data_loader import SentenceDataset, batchfy
+from model import BiLSTM
 
 def main_train(config): 
     
@@ -43,23 +44,70 @@ def main_train(config):
     src_dataset = SentenceDataset(src_data.vectorized_corpus, src_data.length, config["batch_size"], src_vocab.special_tokens)
     tgt_dataset = SentenceDataset(tgt_data.vectorized_corpus, tgt_data.length, config["batch_size"], tgt_vocab.special_tokens)
 
-    # src_batches = batchfy(dataset=src_dataset, batch_size=1) 
-    # tgt_batches = batchfy(dataset=tgt_dataset, batch_size=1)
+    src_batches = batchfy(dataset=src_dataset, batch_size=1, shuffle=True) 
+    tgt_batches = batchfy(dataset=tgt_dataset, batch_size=1, shuffle=True)
 
     logger.debug("-- total of %d batches are created --", len(src_dataset.bacth_idx_list))
-
+ 
+    ####### Needs to be done in trainer #############################
     logger.debug("-- building model: %s --", config["name"])
-
-    logger.debug("-- model is ready -- ")
 
     if config["gpu_id"]:
         logger.debug("-- GPU is used for the training --")
+        device = torch.device("cuda")
+    else:
+        logger.debug("-- CPU is used for the training --")
+        device = torch.device("cpu")
+
+    # model = BiLSTM().device() 
+
+    # logger.debug("-- model is ready -- ")
+
+    # criterion = nn.CrossEntropyLoss()
+
+    # optimizer = optim.ASGD(model.parameters(), lr=lr_rate)
+
+    # trainer = Trainer(model, criterion, optimizer,
+    #                   config=config,
+    #                   data_loader=data_loader,
+    #                   valid_data_loader=valid_data_loader,
+    #                   lr_scheduler=lr_scheduler)
+
+    # trainer.train()
+
+
+
+    # src_fwd_inputs, src_fwd_outputs, src_bwd_inputs, src_bwd_outputs = next(iter(src_dataset))
+    # print(type(src_fwd_inputs))
+    # print(type(src_fwd_inputs[0]))
+    # print(type(src_fwd_inputs[0][0]))
+    # print(src_fwd_inputs)
+    # src_fwd_inputs.to(device)
 
     logger.debug("++ starting the training ++")
-    # model
+    for e in range(1, config["epoch"]+1):
+        for (src, tgt) in zip(src_batches, tgt_batches):
 
-    # train
+            src_fwd_inputs, src_fwd_outputs, src_bwd_inputs, src_bwd_outputs = src
+            tgt_fwd_inputs, tgt_fwd_outputs, tgt_bwd_inputs, tgt_bwd_outputs = tgt
+        
+            # Send data to the GPU
+            src_fwd_inputs, src_fwd_outputs = src_fwd_inputs.to(device), src_fwd_outputs.to(device)
+            src_bwd_inputs, src_bwd_outputs = src_bwd_inputs.to(device), src_bwd_outputs.to(device)
+            tgt_fwd_inputs, tgt_fwd_outputs = tgt_fwd_inputs.to(device), tgt_fwd_outputs.to(device)
+            tgt_bwd_inputs, tgt_bwd_outputs = tgt_bwd_inputs.to(device), tgt_bwd_outputs.to(device)
+            
+            optimizer.zero_grad()  # clear previous gradients
+            loss.backward()        # compute gradients of all variables wrt loss
+
+            optimizer.step()       # perform updates using calculated gradients
+
+        logger.info("epoch %d/%d  - loss %d")
+
+    #####################################################################
+    logger.debug("+"* 30)
     
+    logger.debug("-- saving the embedding --")
     # Save the embedding 
     # config.save_file()
 

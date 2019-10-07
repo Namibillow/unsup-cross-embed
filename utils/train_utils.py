@@ -29,16 +29,6 @@ def load_data(data_path, data_prefix):
 	# print(vocab.special_tokens)
 	return dataset, vocab 
 
-def get_minibatches():
-	pass
-
-def pad_sequence():
-	pass
-
-def pad_special_tokens():
-	pass # add <BOS> <EOS> 
-
-
 def oversampling(src, tgt):
 	"""
 	- Randomly repeat some minority samples and balance the number of samples between the dataset 
@@ -69,5 +59,3 @@ def augment_data(self,lines, rep, ramdom_idx):
 def save_embedding():
 	pass
 
-def mini_batchfy():
-	pass
