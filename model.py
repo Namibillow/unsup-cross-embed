@@ -1,5 +1,4 @@
 import numpy as np
-
 import torch
 import torch.nn as nn
 from torch.autograd import Variable 
@@ -9,9 +8,9 @@ class BiLSTM(nn.Module):
     """
     - Bidirectional LSTM module 
     """
-    def __init__(self, en_vocab_size, zh_vocab_size, hidden_dim=300, embedding_dim=300, num_layers=2, batch_size=64, drop_prob=0.3):
+    def __init__(self, src_vocab, tgt_vocab, config):
         """
-        INPUT:
+        input:
             hidden_dim: 300 according to the paper 
             embedding_dim: 300 according to the paper 
             num_layers: number of hidden layers. 2 according to the paper.
@@ -23,43 +22,42 @@ class BiLSTM(nn.Module):
         """
         super(BiLSTM, self).__init__() 
 
-        self.hidden_dim = hidden_dim
-        self.embedding_dim = embedding_dim
-        self.num_layers = num_layers 
-        self.en_vocab_size = en_vocab_size
-        self.zh_vocab_size = zh_vocab_size
-        self.drop_prob = drop_prob
-        self.batch_size = batch_size
-        
-        # English embedding 
-        self.embedding_en = nn.Embedding(num_embeddings=en_vocab_size, embedding_dim=embedding_dim, padding_idx=0)
-        # Chinese embedding 
-        self.embedding_zh = nn.Embedding(num_embeddings=zh_vocab_size, embedding_dim=embedding_dim, padding_idx=0)
+        self.src_vocab = src_vocab
+        self.tgt_vocab = tgt_vocab
 
-        # Initialize Word Embedding using an uniform distribution
-        nn.init.uniform_(self.embedding_en.weight, -1.0, 1.0)
-        nn.init.uniform_(self.embedding_zh.weight, -1.0, 1.0)
+        self.hidden_dim = config["hidden_dim"]
+        self.embedding_dim = config["emb_dim"]
+        self.num_layers = config["num_layers"]
+        self.drop_prob = config["dropout_rate"]
+        self.weight_init_range = config["weight_init_range"]
 
-        # Padding set to 0 
-        self.embedding_en.weight.data[0] = 0
-        self.embedding_zh.weight.data[0] = 0
+        ################# LAYERS ########################################
         
-        # Unknown set to 0
-        self.embedding_en.weight.data[1] = 0
-        self.embedding_zh.weight.data[1] = 0
+        # src embedding 
+        self.embedding_src = nn.Embedding(num_embeddings=self.src_vocab.vocab_len, embedding_dim=self.embedding_dim, padding_idx=self.src_vocab.special_tokens["PAD"])
+        # tgt embedding 
+        self.embedding_tgt = nn.Embedding(num_embeddings=self.tgt_vocab.vocab_len, embedding_dim=self.embedding_dim, padding_idx=self.tgt_vocab.special_tokens["PAD"])
+
+        # Initialize all of the parameters using an uniform distribution
+        for param in self.model.parameters():
+            param.data.uniform_(self.weight_init_range[0], self.weight_init_range[1])
+
+        # Unknown set to 0 vector
+        self.embedding_src.weight.data[self.src_vocab.special_tokens["UNK"]] *= 0
+        self.embedding_tgt.weight.data[self.tgt_vocab.special_tokens["UNK"]] *= 0
 
         # Dropout 
         self.dropout = nn.Dropout(self.drop_prob)
 
         # LSTM forward and backward
-        self.forward_lstm = nn.LSTM(input_size=embedding_dim, hidden_size=hidden_dim, num_layers=num_layers,
-                          dropout=drop_prob, batch_first=True)
-        self.back_lstm = nn.LSTM(input_size=embedding_dim, hidden_size=hidden_dim, num_layers=num_layers,
-                          dropout=drop_prob, batch_first=True)
+        self.forward_lstm = nn.LSTM(input_size=self.embedding_dim, hidden_size=self.hidden_dim, num_layers=self.num_layers,
+                          dropout=self.drop_prob, batch_first=True)
+        self.back_lstm = nn.LSTM(input_size=self.embedding_dim, hidden_size=self.hidden_dim, num_layers=self.num_layers,
+                          dropout=self.drop_prob, batch_first=True)
 
         # take all timestep
-        self.output_layer_zh = nn.Linear(in_features=hidden_dim , out_features=zh_vocab_size)
-        self.output_layer_en = nn.Linear(in_features=hidden_dim , out_features=en_vocab_size)
+        self.output_layer_src = nn.Linear(in_features=hidden_dim, out_features=self.src_vocab.vocab_len, bias=False)
+        self.output_layer_tgt = nn.Linear(in_features=hidden_dim, out_features=self.tgt_vocab.vocab_len, bias=False)
         
     def init_hidden(self, bs):
         """
@@ -71,12 +69,12 @@ class BiLSTM(nn.Module):
 
     def forward(self, lang, sentences, sent_lengths):
         """
-        INPUT:
+        input:
             lang: 
                 - language name (string)
             sentences:
                 - tensor (batch, seq_length, embedding)
-        OUTPUT:
+        returns:
             forward_output:
                 -
             backward_output:
@@ -131,14 +129,15 @@ class BiLSTM(nn.Module):
         embeds_pad_backward = nn.utils.rnn.pack_padded_sequence(embeds, sent_lengths, batch_first=True)
 
         """
-        INPUT:
-        input : (batch, seq_len, embedding_dim)
-        h_0 : (num_layers, batch, hidden_size)
-        c_0 : (num_layers, batch, hidden_size)
-        RETURN:
-        output : (batch, seq_len, embedding_dim) 
-        h_n : (num_layers, batch, hidden_size)
-        c_n : (num_layers, batch, hidden_size)
+        inputs:
+            input : (batch, seq_len, embedding_dim)
+            h_0 : (num_layers, batch, hidden_size)
+            c_0 : (num_layers, batch, hidden_size)
+
+        returns:
+            output : (batch, seq_len, embedding_dim) 
+            h_n : (num_layers, batch, hidden_size)
+            c_n : (num_layers, batch, hidden_size)
         """
         # Forward
         forward_lstm_out, (fh_t, fc_t)  = self.forward_lstm(embeds_pad_forward, (fh_t, fc_t))
@@ -173,8 +172,3 @@ class BiLSTM(nn.Module):
         
         return forward_output, backward_output
 
-    def set_device(self,is_cuda):
-        if is_cuda:
-            self.torch = torch.cuda
-        else:
-            self.torch = torch

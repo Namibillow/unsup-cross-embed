@@ -2,7 +2,6 @@
     "name": "Bi-LSTM",
 
     "n_gpu" : 1, 
-    "gpu_id" : 1,
 
     "optimizer": {
         "type": "SGD",
@@ -19,5 +18,7 @@
     "hidden_dim": 300,
     "batch_size": 32,
     "epoch": 30,
-    "grad_clipping": 5.0
+    "save_period" : 1,
+    "grad_clipping": 5.0,
+    "stop_threshold": 0.99
 }

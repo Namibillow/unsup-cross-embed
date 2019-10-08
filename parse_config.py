@@ -66,6 +66,9 @@ class ConfigParser:
 
         write_json(content, self.save_dir / fname)
 
+    def get_save_path(self):
+        return self.save_dir
+        
     def __getitem__(self, name):
         return self.config[name]
 
