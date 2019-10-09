@@ -97,7 +97,7 @@ class Dataset():
         input:
             vectorized_corpus: a list of list of tokenized words which converted to indexes
             tokenized_corpus: a lits of list of tokenized words
-            length: a list of integers where each number represents length of the sentences
+            length: a list of integers where each number represents length of the sentences. No special tokens are appended
         """
         self.vectorized_corpus = []
         self.tokenized_corpus = []

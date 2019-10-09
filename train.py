@@ -59,11 +59,13 @@ def main_train(config):
                       total_batches=total_batches,
                       src_data_loader=src_batches,
                       tgt_data_loader=tgt_batches,
-                      lr_scheduler=lr_scheduler)
+                      src_vocab=src_vocab,
+                      tgt_vocab=tgt_vocab
+                    )
     
     logger.debug("++ starting the training ++")
 
-    best_model = trainer.train()
+    # best_model = trainer.train()
 
     logger.debug("+"* 30)
     

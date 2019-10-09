@@ -1,97 +1,159 @@
-from numpy import inf
-import numpy as np
-
-import torch
-from torch import nn
-
+import pathlib 
 import time 
 
+from numpy import inf
+import numpy as np
+import torch
+from torch import nn
+from torch import optim
+
 class Trainer:
-    def __init__(self, model, config, total_batches, src_data_loader, tgt_data_loadder):
+    def __init__(self, model, config, total_batches, src_data_loader, tgt_data_loader, src_vocab, tgt_vocab):
         self.config = config
         self.logger = config.get_logger('train')
 
         # setup GPU device if available, move model into configured device
         self.device, device_ids = self._prepare_device(config['n_gpu'])
         
+        self.weight_init_range = config["weight_init_range"]
+        self.tgt_vocab = tgt_vocab
+        self.src_vocab = src_vocab
+
+        self.init_model()
+        
         self.model = model.to(self.device)
         if len(device_ids) > 1:
             self.model = torch.nn.DataParallel(model, device_ids=device_ids)
 
-        self.cross_entropy = nn.CrossEntropyLoss(ignore_index=self.ignore_index, reduction='none')
-        self.optimizer = self.set_optimizer(config["optimizer"]["type"])
+        self.cross_entropy = nn.CrossEntropyLoss(ignore_index=self.src_vocab.special_tokens["PAD"], reduction='none')
+        self.optimizer = self.set_optimizer(config["optimizer"]["type"], config["optimizer"]["args"]["lr"])
 
         self.src_data_loader = src_data_loader
-        self.tgt_data_loadder = tgt_data_loadder
+        self.tgt_data_loadder = tgt_data_loader
+
         
         self.total_batches = total_batches
-
-        self.lr_rate = config["optimizer"]["args"]["lr"]
+        self.batch_size = config["batch_size"]
         
-        self.epochs = config['epochs']
-        self.save_period = config['save_period']
-
+        self.epochs = config['epoch']
         self.start_epoch = 1
 
+        self.save_period = config['save_period']
         self.checkpoint_dir = config.save_dir
+        self.remove_models = config["remove_models"]
 
         self.cumloss_old = np.inf 
         self.cumloss_new = np.inf 
 
-        ##################################################
-        self.log_step = int(np.sqrt(config["batch_size"]))
+        self.log_step = int(np.sqrt(self.batch_size))
 
-        ###################################################
+    def init_model(self):
+        """
+        initialize all of the model parameters using an uniform distribution
+        """
+        for param in self.model.parameters():
+            param.data.uniform_(self.weight_init_range[0], self.weight_init_range[1])
 
-    def set_optimizer(self, optimizer):
+        # Unknown set to 0 vector
+        self.model.embedding_src.weight.data[self.src_vocab.special_tokens["UNK"]] *= 0
+        self.model.embedding_tgt.weight.data[self.tgt_vocab.special_tokens["UNK"]] *= 0
+
+    def set_optimizer(self, opt_type="SGD", lr_rate):
+        """
+        set optimizer specified 
+
+        inputs:
+            opt_type: (str) optimizer type
+            lr_rate: (float) learning rate
+
+        """
         if opt_type == "SGD":
             self.optimizer = optim.SGD(self.model.parameters(), lr=lr_rate)
         elif opt_type == "ASGD":
             self.optimizer = optim.ASGD(self.model.parameters(), lr=lr_rate)
 
+    def calc_loss(self, softmax_score, target):
+        """
+        calculate the loss
+
+        inputs:
+            softmax_score:
+            target:
+            
+        
+        return:
+            loss: 
+        """
+        batch_size, s_len, tgtV = softmax_score.size()
+        loss = self.criterion(softmax_score.view(batch_size*s_len, tgtV), self.torch.LongTensor(target).view(-1))  # (bs * maxlen_t,)
+        loss = torch.sum(loss) / self.batch_size
+        return loss
+
+    def _train_batch(self, inputs, targets):
+        """
+        train logic for a batch
+        
+        inputs:
+            inputs: a batch of inputs
+            targets: a batch of targets for the inputs
+
+        return: 
+        """
+        self.optimizer.zero_grad() 
+
+        softmax_score = self.model(inputs)
+        loss = self.calc_loss(softmax_score, targets)
+        # Calculate loss 
+        loss.backward()
+        clip_grad_norm_(model.parameters(), 5.0)
+        self.optimizer.step()
+
+        return loss.data.tolist()
 
     def _train_epoch(self, epoch):
-            """
-            Training logic for an epoch
-            :param epoch: Integer, current training epoch.
-            :return: A log that contains average loss and metric in this epoch.
-            """
-            self.model.train()
-
-            cumloss = 0 
-
-            for batch_idx, (src, tgt) in enumerate(zip(src_batches, tgt_batches)):
-
-                self.optimizer.zero_grad()
-
-                src_fwd_inputs, src_fwd_outputs, src_bwd_inputs, src_bwd_outputs = src
-                tgt_fwd_inputs, tgt_fwd_outputs, tgt_bwd_inputs, tgt_bwd_outputs = tgt
+        """
+        training logic for an epoch
+        
+        input:
+            epoch: (int) current training epoch.
             
-                # Send data to the GPU
-                src_fwd_inputs, src_fwd_outputs = src_fwd_inputs.to(self.device), src_fwd_outputs.to(self.device)
-                src_bwd_inputs, src_bwd_outputs = src_bwd_inputs.to(self.device), src_bwd_outputs.to(self.device)
-                tgt_fwd_inputs, tgt_fwd_outputs = tgt_fwd_inputs.to(self.device), tgt_fwd_outputs.to(self.device)
-                tgt_bwd_inputs, tgt_bwd_outputs = tgt_bwd_inputs.to(self.device), tgt_bwd_outputs.to(self.device)
+        return:    
+            cumloss: 
+        """
+        self.model.train()
+
+        cumloss = 0 
+
+        for batch_idx, (src, tgt) in enumerate(zip(src_batches, tgt_batches)):
+            loss = 0 
+
+            for curr, (fwd_inputs, fwd_outputs. bwd_inputs, bwd_outputs) in enumerate([src, tgt]):
+                
+                self.model.swich_lang(curr)
+
+                fwd_inputs, fwd_outputs = fwd_inputs.to(self.device), fwd_outputs.to(self.device)
+                bwd_inputs, bwd_outputs = bwd_inputs.to(self.device), bwd_outputs.to(self.device)
+
+                self.model.switch_lstm("fwd")
+                loss += self._train_batch(fwd_inputs, fwd_outputs)
+
+                self.model.switch_lstm("bwd")
+                loss += self._train_batch(bwd_inputs, bwd_outputs)
             
-                output = self.model(data)
-                loss = self.criterion(output, target)
-                loss.backward()
-                self.optimizer.step()
+            cumloss+= loss
 
-                cumloss+= loss
-
-                if batch_idx % self.log_step == 0:
-                    self.logger.debug('Train Epoch: {} {} Loss: {:.6f}'.format(
-                        epoch,
-                        self._progress(batch_idx),
-                        loss.item()/batch_idx))
-                    
-            return cumloss 
+            if batch_idx % self.log_step == 0:
+                self.logger.debug('Train Epoch: {}/{} Loss: {:.6f}'.format(
+                    batch_idx,
+                    self.batch_size,
+                    loss.item()/batch_idx))
+                
+        return cumloss 
 
 
     def train(self):
         """
-        Full training logic
+        full training logic
         """
         not_improved_count = 0
         saved_model = False 
@@ -113,52 +175,16 @@ class Trainer:
             improvement_rate = self.cumloss_new / self.cumloss_old
             self.logger.debug("loss improvement rate:", improvement_rate)
 
-            new_model_name = "epoch" + str(epoch) +'.model'
-            new_file = config.get_save_path() / new_model_name
 
             if (improvement_rate > stop_threshold):
-                torch.save(self.model.state_dict(), new_file)
-                saved_model = True 
+                self.logger.info("Validation performance didn\'t improve for {} epochs. "
+                                     "Training stops.".format(epochs))
                 break
         
-        if not saved_model:
-            torch.save(self.model.state_dict(), new_file)
+            if epoch % self.save_period == 0:
+                self._save_checkpoint(epoch, remove_models)
 
-            # # save logged informations into log dict
-            # log = {'epoch': epoch}
-            # log.update(result)
-
-            # # print logged informations to the screen
-            # for key, value in log.items():
-            #     self.logger.info('    {:15s}: {}'.format(str(key), value))
-
-            # # evaluate model performance according to configured metric, save best checkpoint as model_best
-            # best = False
-            # if self.mnt_mode != 'off':
-            #     try:
-            #         # check whether model performance improved or not, according to specified metric(mnt_metric)
-            #         improved = (self.mnt_mode == 'min' and log[self.mnt_metric] <= self.mnt_best) or \
-            #                    (self.mnt_mode == 'max' and log[self.mnt_metric] >= self.mnt_best)
-            #     except KeyError:
-            #         self.logger.warning("Warning: Metric '{}' is not found. "
-            #                             "Model performance monitoring is disabled.".format(self.mnt_metric))
-            #         self.mnt_mode = 'off'
-            #         improved = False
-
-            #     if improved:
-            #         self.mnt_best = log[self.mnt_metric]
-            #         not_improved_count = 0
-            #         best = True
-            #     else:
-            #         not_improved_count += 1
-
-            #     if not_improved_count > self.early_stop:
-            #         self.logger.info("Validation performance didn\'t improve for {} epochs. "
-            #                          "Training stops.".format(self.early_stop))
-            #         break
-
-            # if epoch % self.save_period == 0:
-            #     self._save_checkpoint(epoch, save_best=best)
+        return self.model 
 
     def _prepare_device(self, n_gpu_use):
         """
@@ -181,52 +207,38 @@ class Trainer:
 
         device = torch.device('cuda:0' if n_gpu_use > 0 else 'cpu')
         
-        logger.debug("-- Total of %d GPU is used for the training --", n_gpu_use)
+        self.logger.debug("-- Total of %d GPU is used for the training --", n_gpu_use)
 
         list_ids = list(range(n_gpu_use))
 
         return device, list_ids
 
-    def _save_checkpoint(self, epoch, save_best=False):
+    def _save_checkpoint(self, epoch, remove_models=True):
         """
-        Saving checkpoints
-        :param epoch: current epoch number
-        :param log: logging information of the epoch
-        :param save_best: if True, rename the saved checkpoint to 'model_best.pth'
+        saving checkpoints
+        
+        inputs:
+            epoch: (int) current epoch number
+            remove_models: (Boolean) if True, remove the previous checkpoint
         """
-        arch = type(self.model).__name__
         state = {
-            'arch': arch,
             'epoch': epoch,
             'state_dict': self.model.state_dict(),
-            'optimizer': self.optimizer.state_dict(),
-            'monitor_best': self.mnt_best,
-            'config': self.config
         }
-        filename = str(self.checkpoint_dir / 'checkpoint-epoch{}.pth'.format(epoch))
+        filename = str(self.checkpoint_dir / 'checkpoint-epoch{}.model'.format(epoch))
         torch.save(state, filename)
         self.logger.info("Saving checkpoint: {} ...".format(filename))
-        if save_best:
-            best_path = str(self.checkpoint_dir / 'model_best.pth')
-            torch.save(state, best_path)
-            self.logger.info("Saving current best: model_best.pth ...")
-
-    def _progress(self, batch_idx):
-        base = '[{}/{} ({:.0f}%)]'
-        if hasattr(self.data_loader, 'n_samples'):
-            current = batch_idx * self.data_loader.batch_size
-            total = self.data_loader.n_samples
-        else:
-            current = batch_idx
-            total = self.len_epoch
-        return base.format(current, total, 100.0 * current / total)
+        if remove_models and epoch != 1:
+            filename = Path(self.checkpoint_dir / 'checkpoint-epoch{}.model'.format(epoch-1))
+            filename.unlink()
+            self.logger.debug("-- removed previous model --")
 
     def loss_fn(pred, correct):
         """
             Computer the corss entropy loss given outputs from the model and labels for all tokens
             Exclude loss terms for PADding tokens.
         
-        input:  
+        inputs:  
             pred: (Variable) dimension - log softmax output of the model
             correct: (Variable) dimension
 

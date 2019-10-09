@@ -20,5 +20,6 @@
     "epoch": 30,
     "save_period" : 1,
     "grad_clipping": 5.0,
-    "stop_threshold": 0.99
+    "stop_threshold": 0.99,
+    "remove_models": 1
 }

@@ -1,8 +1,8 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.autograd import Variable 
 import torch.nn.functional as F
+from torch.autograd import Variable 
 
 class BiLSTM(nn.Module):
     """
@@ -11,14 +11,9 @@ class BiLSTM(nn.Module):
     def __init__(self, src_vocab, tgt_vocab, config):
         """
         input:
-            hidden_dim: 300 according to the paper 
-            embedding_dim: 300 according to the paper 
-            num_layers: number of hidden layers. 2 according to the paper.
-            en_vocab_size: total vocab numbers
-            zh_vocab_size: total vocab numbers
-            output_size:
-            batch_size:
-            drop_prob: drop rate 
+            src_vocab
+            tgt_vocab
+            config
         """
         super(BiLSTM, self).__init__() 
 
@@ -27,37 +22,23 @@ class BiLSTM(nn.Module):
 
         self.hidden_dim = config["hidden_dim"]
         self.embedding_dim = config["emb_dim"]
-        self.num_layers = config["num_layers"]
+        self.num_layers = config["num_layer"]
         self.drop_prob = config["dropout_rate"]
-        self.weight_init_range = config["weight_init_range"]
+       
 
-        ################# LAYERS ########################################
-        
-        # src embedding 
+        ################# LAYERS ########################################      
         self.embedding_src = nn.Embedding(num_embeddings=self.src_vocab.vocab_len, embedding_dim=self.embedding_dim, padding_idx=self.src_vocab.special_tokens["PAD"])
-        # tgt embedding 
         self.embedding_tgt = nn.Embedding(num_embeddings=self.tgt_vocab.vocab_len, embedding_dim=self.embedding_dim, padding_idx=self.tgt_vocab.special_tokens["PAD"])
 
-        # Initialize all of the parameters using an uniform distribution
-        for param in self.model.parameters():
-            param.data.uniform_(self.weight_init_range[0], self.weight_init_range[1])
-
-        # Unknown set to 0 vector
-        self.embedding_src.weight.data[self.src_vocab.special_tokens["UNK"]] *= 0
-        self.embedding_tgt.weight.data[self.tgt_vocab.special_tokens["UNK"]] *= 0
-
-        # Dropout 
         self.dropout = nn.Dropout(self.drop_prob)
 
-        # LSTM forward and backward
         self.forward_lstm = nn.LSTM(input_size=self.embedding_dim, hidden_size=self.hidden_dim, num_layers=self.num_layers,
                           dropout=self.drop_prob, batch_first=True)
         self.back_lstm = nn.LSTM(input_size=self.embedding_dim, hidden_size=self.hidden_dim, num_layers=self.num_layers,
                           dropout=self.drop_prob, batch_first=True)
 
-        # take all timestep
-        self.output_layer_src = nn.Linear(in_features=hidden_dim, out_features=self.src_vocab.vocab_len, bias=False)
-        self.output_layer_tgt = nn.Linear(in_features=hidden_dim, out_features=self.tgt_vocab.vocab_len, bias=False)
+        self.output_layer_src = nn.Linear(in_features=self.hidden_dim, out_features=self.src_vocab.vocab_len, bias=False)
+        self.output_layer_tgt = nn.Linear(in_features=self.hidden_dim, out_features=self.tgt_vocab.vocab_len, bias=False)
         
     def init_hidden(self, bs):
         """
@@ -67,6 +48,31 @@ class BiLSTM(nn.Module):
         cell =  Variable(next(self.parameters()).data.new(self.num_layers, bs, self.hidden_dim))
         return hidden.zero_(), cell.zero_()
 
+    def switch_lstm(self, type):
+        if (type == "fwd"):
+            self.lstm = self.forward_lstm
+
+        elif (type == "bkw"):
+            self.lstm = self.back_lstm
+
+        else:
+            raise Exception("Invalid type")
+
+    def swithc_lang(self, type):
+        
+        if type == 0:
+            self.output_layer = self.output_layer_src
+            self.embedding = self.embedding_src
+        elif type == 1:
+            self.output_layer = self.output_layer_tgt
+            self.embedding = self.embedding_tgt
+        else:
+            raise Exception("Invalid")
+
+    def forward(self, inputs, sent_lengths):
+        batch_size, seq_len = inputs.size()
+
+        self.embedding
     def forward(self, lang, sentences, sent_lengths):
         """
         input:
@@ -80,7 +86,6 @@ class BiLSTM(nn.Module):
             backward_output:
                 - 
         """
-        
         batch_size, seq_len = sentences.size()
         
         # Check which embedding to use
