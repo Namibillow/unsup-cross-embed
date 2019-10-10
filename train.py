@@ -47,7 +47,6 @@ def main_train(config):
     total_batches = len(src_dataset.bacth_idx_list)
     logger.debug("-- total of %d batches are created --", total_batches)
  
-    ####### Needs to be done in trainer #############################
     logger.debug("-- building model: %s --", config["name"])
 
     model = BiLSTM(src_vocab, tgt_vocab, config)
@@ -65,9 +64,9 @@ def main_train(config):
     
     logger.debug("++ starting the training ++")
 
-    # best_model = trainer.train()
+    best_model = trainer.train()
 
-    logger.debug("+"* 30)
+    logger.debug("++ training is done ++")
     
     logger.debug("-- saving the embedding --")
     # Save the embedding 

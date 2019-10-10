@@ -40,13 +40,6 @@ class BiLSTM(nn.Module):
         self.output_layer_src = nn.Linear(in_features=self.hidden_dim, out_features=self.src_vocab.vocab_len, bias=False)
         self.output_layer_tgt = nn.Linear(in_features=self.hidden_dim, out_features=self.tgt_vocab.vocab_len, bias=False)
         
-    def init_hidden(self, bs):
-        """
-        - initialize the hiddent states 
-        """
-        hidden = Variable(next(self.parameters()).data.new(self.num_layers, bs, self.hidden_dim))
-        cell =  Variable(next(self.parameters()).data.new(self.num_layers, bs, self.hidden_dim))
-        return hidden.zero_(), cell.zero_()
 
     def switch_lstm(self, type):
         if (type == "fwd"):
@@ -110,11 +103,7 @@ class BiLSTM(nn.Module):
             # Get the embedding 
             embeds = self.embedding_zh(sentences) 
             
-        
-
-        # Initialize the hidden states 
-        fh_t, fc_t = self.init_hidden(batch_size)
-        bh_t, bc_t = self.init_hidden(batch_size)
+    
 
         embeds_pad_forward = nn.utils.rnn.pack_padded_sequence(embeds, sent_lengths, batch_first=True)
     
@@ -145,9 +134,9 @@ class BiLSTM(nn.Module):
             c_n : (num_layers, batch, hidden_size)
         """
         # Forward
-        forward_lstm_out, (fh_t, fc_t)  = self.forward_lstm(embeds_pad_forward, (fh_t, fc_t))
+        forward_lstm_out, (fh_t, fc_t)  = self.forward_lstm(embeds_pad_forward)
         # Backward
-        backward_lstm_out, (bh_t, bc_t) = self.back_lstm(embeds_pad_backward,(bh_t,bc_t))
+        backward_lstm_out, (bh_t, bc_t) = self.back_lstm(embeds_pad_backward
         
         forward_lstm_out, _ = nn.utils.rnn.pad_packed_sequence(forward_lstm_out, batch_first=True, total_length=seq_len)
         backward_lstm_out, _ = nn.utils.rnn.pad_packed_sequence(backward_lstm_out, batch_first=True, total_length=seq_len)

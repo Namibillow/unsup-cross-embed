@@ -16,14 +16,16 @@ class Trainer:
         self.device, device_ids = self._prepare_device(config['n_gpu'])
         
         self.weight_init_range = config["weight_init_range"]
+
         self.tgt_vocab = tgt_vocab
         self.src_vocab = src_vocab
 
-        self.init_model()
+        self.model = model
+        self.init_model() #initialize model 
         
-        self.model = model.to(self.device)
+        self.model = self.model.to(self.device)
         if len(device_ids) > 1:
-            self.model = torch.nn.DataParallel(model, device_ids=device_ids)
+            self.model = torch.nn.DataParallel(model, device_ids=device_ids) # train with multiple GPUs
 
         self.cross_entropy = nn.CrossEntropyLoss(ignore_index=self.src_vocab.special_tokens["PAD"], reduction='none')
         self.optimizer = self.set_optimizer(config["optimizer"]["type"], config["optimizer"]["args"]["lr"])
@@ -53,12 +55,15 @@ class Trainer:
         """
         for param in self.model.parameters():
             param.data.uniform_(self.weight_init_range[0], self.weight_init_range[1])
+       
+        # 0 out PAD and UNK
+        self.model.embedding_src.weight.data[self.src_vocab.special_tokens["PAD"]] = 0
+        self.model.embedding_tgt.weight.data[self.src_vocab.special_tokens["PAD"]] = 0
 
-        # Unknown set to 0 vector
-        self.model.embedding_src.weight.data[self.src_vocab.special_tokens["UNK"]] *= 0
-        self.model.embedding_tgt.weight.data[self.tgt_vocab.special_tokens["UNK"]] *= 0
+        self.model.embedding_src.weight.data[self.src_vocab.special_tokens["UNK"]] = 0
+        self.model.embedding_tgt.weight.data[self.tgt_vocab.special_tokens["UNK"]] = 0
 
-    def set_optimizer(self, opt_type="SGD", lr_rate):
+    def set_optimizer(self, opt_type="SGD", lr_rate=0.5):
         """
         set optimizer specified 
 
@@ -72,21 +77,30 @@ class Trainer:
         elif opt_type == "ASGD":
             self.optimizer = optim.ASGD(self.model.parameters(), lr=lr_rate)
 
-    def calc_loss(self, softmax_score, target):
+    def calc_loss(self, pred, correct):
         """
-        calculate the loss
-
-        inputs:
-            softmax_score:
-            target:
-            
+            Computer the corss entropy loss given outputs from the model and labels for all tokens
+            Exclude loss terms for PADding tokens.
         
-        return:
-            loss: 
+        inputs:  
+            pred: (Variable) dimension - log softmax output of the model. soft maxed scores of shape (batch_size, sent_len, vocabs)
+            correct: (Variable) dimension - (batch_size, sent_len)
+
+        returns:
+            loss: (float) a total loss for the batch 
         """
-        batch_size, s_len, tgtV = softmax_score.size()
-        loss = self.criterion(softmax_score.view(batch_size*s_len, tgtV), self.torch.LongTensor(target).view(-1))  # (bs * maxlen_t,)
-        loss = torch.sum(loss) / self.batch_size
+        batch_size, sent_len, vocabs = pred.size()
+
+        # # only consider non-zero targets since we are not considering PAD for loss (warning: PAD has id of 0)
+        # mask = correct.ge(1).type(torch.LongTensor).to(self.device) # (batch_size, sent_len)
+        # mask.view(-1) # (batch_size * sent_len)
+        # loss = self.cross_entropy(pred, correct) * mask # (batch_size * sent_len)
+
+        pred = pred.view(batch_size * sent_len, vocabs) # (batch_size * sent_len, vocabs)
+        correct = target.view(-1) # (batch_size * sent_len)
+
+        loss = self.cross_entropy(pred, correct) 
+        loss = torch.sum(loss) / self.batch_size 
         return loss
 
     def _train_batch(self, inputs, targets):
@@ -154,6 +168,9 @@ class Trainer:
     def train(self):
         """
         full training logic
+
+        return:
+            model
         """
         not_improved_count = 0
         saved_model = False 
@@ -169,8 +186,8 @@ class Trainer:
             elapsed_time = time.time() - start
             self.cumloss_new = cumloss/self.total_batches
 
-            self.logger.debug("Train elapsed_time:{0}".format(elapsed_time) + "[sec]")
-            self.logger.info("Train Epoch: {}/{} Total loss: {:.6f} :".format(epoch, self.epochs+1 ,cumloss))
+            self.logger.debug('Time taken for 1 epoch {} sec\n'.format(elapsed_time))
+            self.logger.info("Train Epoch: {}/{} Total loss: {:.6f} :".format(epoch, self.epochs+1 ,self.cumloss_new))
 
             improvement_rate = self.cumloss_new / self.cumloss_old
             self.logger.debug("loss improvement rate:", improvement_rate)
@@ -194,6 +211,8 @@ class Trainer:
             n_gpu_use: (int) number of GPU to be used. 
 
         returns: 
+            device:  an object representing the device on which a torch.Tensor is or will be allocated
+            list_ids: (list(int)) GPU ids to be used 
         """
         n_gpu = torch.cuda.device_count()
         if n_gpu_use > 0 and n_gpu == 0:
@@ -233,16 +252,4 @@ class Trainer:
             filename.unlink()
             self.logger.debug("-- removed previous model --")
 
-    def loss_fn(pred, correct):
-        """
-            Computer the corss entropy loss given outputs from the model and labels for all tokens
-            Exclude loss terms for PADding tokens.
-        
-        inputs:  
-            pred: (Variable) dimension - log softmax output of the model
-            correct: (Variable) dimension
-
-        returns:
-
-        """
-        pass
+   
