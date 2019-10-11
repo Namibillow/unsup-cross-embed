@@ -188,14 +188,14 @@ class Trainer:
             elapsed_time = time.time() - start
             self.cumloss_new = cumloss/self.total_batches
 
-            self.logger.debug('Time taken for 1 epoch {} sec\n'.format(elapsed_time))
-            self.logger.info("Train Epoch: {}/{} Total loss: {:.6f} :".format(epoch, self.epochs+1 ,self.cumloss_new))
+            self.logger.debug('Time taken for 1 epoch {:.2f} sec\n'.format(elapsed_time))
+            self.logger.info("Train Epoch: {}/{} Total loss: {:.6f}.".format(epoch, self.epochs ,self.cumloss_new))
 
             improvement_rate = self.cumloss_new / self.cumloss_old
-            self.logger.debug("loss improvement rate:", improvement_rate)
+            self.logger.debug("loss improvement rate: {:.4f}".format(improvement_rate))
 
 
-            if (improvement_rate > stop_threshold):
+            if (improvement_rate > self.config["stop_threshold"]):
                 self.logger.info("Validation performance didn\'t improve for {} epochs. "
                                      "Training stops.".format(epochs))
                 break
