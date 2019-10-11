@@ -28,10 +28,10 @@ class Trainer:
             self.model = torch.nn.DataParallel(model, device_ids=device_ids) # train with multiple GPUs
 
         self.cross_entropy = nn.CrossEntropyLoss(ignore_index=self.src_vocab.special_tokens["PAD"], reduction='none')
-        self.optimizer = self.set_optimizer(config["optimizer"]["type"], config["optimizer"]["args"]["lr"])
+        self.set_optimizer(config["optimizer"]["type"], config["optimizer"]["args"]["lr"])
 
         self.src_data_loader = src_data_loader
-        self.tgt_data_loadder = tgt_data_loader
+        self.tgt_data_loader = tgt_data_loader
 
         
         self.total_batches = total_batches
@@ -47,7 +47,7 @@ class Trainer:
         self.cumloss_old = np.inf 
         self.cumloss_new = np.inf 
 
-        self.log_step = int(np.sqrt(self.batch_size))
+        self.log_step = int(np.sqrt(self.total_batches)) * 2
 
     def init_model(self):
         """
@@ -97,7 +97,7 @@ class Trainer:
         # loss = self.cross_entropy(pred, correct) * mask # (batch_size * sent_len)
 
         pred = pred.view(batch_size * sent_len, vocabs) # (batch_size * sent_len, vocabs)
-        correct = target.view(-1) # (batch_size * sent_len)
+        correct = correct.view(-1) # (batch_size * sent_len)
 
         loss = self.cross_entropy(pred, correct) 
         loss = torch.sum(loss) / self.batch_size 
@@ -114,12 +114,13 @@ class Trainer:
         return: 
         """
         self.optimizer.zero_grad() 
-
+        batch_size, sent_len, vocabs = inputs.size()
+        inputs = inputs.view(1* batch_size, -1)
         softmax_score = self.model(inputs)
         loss = self.calc_loss(softmax_score, targets)
         # Calculate loss 
         loss.backward()
-        clip_grad_norm_(model.parameters(), 5.0)
+        nn.utils.clip_grad_norm_(self.model.parameters(), 5.0)
         self.optimizer.step()
 
         return loss.data.tolist()
@@ -138,12 +139,13 @@ class Trainer:
 
         cumloss = 0 
 
-        for batch_idx, (src, tgt) in enumerate(zip(src_batches, tgt_batches)):
+        for batch_idx, (src, tgt) in enumerate(zip(self.src_data_loader, self.tgt_data_loader)):
             loss = 0 
 
-            for curr, (fwd_inputs, fwd_outputs. bwd_inputs, bwd_outputs) in enumerate([src, tgt]):
+            for curr, (fwd_inputs, fwd_outputs, bwd_inputs, bwd_outputs) in enumerate([src, tgt]):
                 
-                self.model.swich_lang(curr)
+                self.model.switch_lang(curr)
+                self.model.share_weights()
 
                 fwd_inputs, fwd_outputs = fwd_inputs.to(self.device), fwd_outputs.to(self.device)
                 bwd_inputs, bwd_outputs = bwd_inputs.to(self.device), bwd_outputs.to(self.device)
@@ -156,11 +158,11 @@ class Trainer:
             
             cumloss+= loss
 
-            if batch_idx % self.log_step == 0:
+            if batch_idx % self.log_step == 0 and batch_idx!=0:
                 self.logger.debug('Train Epoch: {}/{} Loss: {:.6f}'.format(
                     batch_idx,
-                    self.batch_size,
-                    loss.item()/batch_idx))
+                    self.total_batches,
+                    loss/batch_idx))
                 
         return cumloss 
 

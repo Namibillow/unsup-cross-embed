@@ -9,12 +9,7 @@ class BiLSTM(nn.Module):
     - Bidirectional LSTM module 
     """
     def __init__(self, src_vocab, tgt_vocab, config):
-        """
-        input:
-            src_vocab
-            tgt_vocab
-            config
-        """
+
         super(BiLSTM, self).__init__() 
 
         self.src_vocab = src_vocab
@@ -42,17 +37,24 @@ class BiLSTM(nn.Module):
         
 
     def switch_lstm(self, type):
+        """
+        input:
+            type:
+        """
         if (type == "fwd"):
             self.lstm = self.forward_lstm
 
-        elif (type == "bkw"):
+        elif (type == "bwd"):
             self.lstm = self.back_lstm
 
         else:
             raise Exception("Invalid type")
 
-    def swithc_lang(self, type):
-        
+    def switch_lang(self, type):
+        """
+        input:
+            type:
+        """
         if type == 0:
             self.output_layer = self.output_layer_src
             self.embedding = self.embedding_src
@@ -64,34 +66,34 @@ class BiLSTM(nn.Module):
         else:
             raise Exception("Invalid")
 
-    def forward(self, inputs, sent_lengths):
+    def forward(self, inputs):
         """
         input:
-            lang: 
-                - language name (string)
-            sentences:
-                - tensor (batch, seq_length, embedding)
-        returns:
-            forward_output:
-                -
-            backward_output:
-                - 
+            inputs:
+
+        return:
+            score:
         """
-        # Weights for EOS shared 
-        # Also the embedding of BOS and EOS needs to be shared 
-        if self.curr == "src":
-            self.embedding.weight.data[self.src_vocab.special_tokens["BOS_FWD"]] = self.embedding_tgt.weight.data[self.src_vocab.special_tokens["BOS_FWD"]]
-            self.embedding.weight.data[self.src_vocab.special_tokens["BOS_BWD"]] = self.embedding_tgt.weight.data[self.src_vocab.special_tokens["BOS_BWD"]]
-            self.output_layer.weight.data[self.src_vocab.special_tokens["EOS"]] = self.output_layer_tgt.weight.data[self.src_vocab.special_tokens["EOS"]]
-        elif self.curr == "tgt":
-            self.embedding.weight.data[self.src_vocab.special_tokens["BOS_FWD"]] = self.embedding_src.weight.data[self.src_vocab.special_tokens["BOS_FWD"]]
-            self.embedding.weight.data[self.src_vocab.special_tokens["BOS_BWD"]] = self.embedding_src.weight.data[self.src_vocab.special_tokens["BOS_BWD"]]
-            self.output_layer.weight.data[self.src_vocab.special_tokens["EOS"]] = self.output_layer_src.weight.data[self.src_vocab.special_tokens["EOS"]]
-            
+
         inputs = self.embedding(inputs)
+
         h_t, (h_last, c_last) = self.lstm(inputs)
 
         score = self.output_layer(self.dropout(h_t))
 
         return score 
 
+    def share_weights(self):
+        """
+        sharing the embedding weights for BOS_FWD and BOW_BWD 
+        sharing the linear mapping weights for EOS  
+        """
+        if self.curr == "src":
+            self.embedding.weight.data[self.src_vocab.special_tokens["BOS_FWD"]].copy_(self.embedding_tgt.weight.data[self.src_vocab.special_tokens["BOS_FWD"]])
+            self.embedding.weight.data[self.src_vocab.special_tokens["BOS_BWD"]].copy_(self.embedding_tgt.weight.data[self.src_vocab.special_tokens["BOS_BWD"]])
+            self.output_layer.weight.data[self.src_vocab.special_tokens["EOS"]].copy_(self.output_layer_tgt.weight.data[self.src_vocab.special_tokens["EOS"]])
+        elif self.curr == "tgt":
+            self.embedding.weight.data[self.src_vocab.special_tokens["BOS_FWD"]].copy_(self.embedding_src.weight.data[self.src_vocab.special_tokens["BOS_FWD"]])
+            self.embedding.weight.data[self.src_vocab.special_tokens["BOS_BWD"]].copy_(self.embedding_src.weight.data[self.src_vocab.special_tokens["BOS_BWD"]])
+            self.output_layer.weight.data[self.src_vocab.special_tokens["EOS"]].copy_(self.output_layer_src.weight.data[self.src_vocab.special_tokens["EOS"]])
+         

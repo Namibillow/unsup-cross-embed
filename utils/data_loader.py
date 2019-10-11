@@ -29,6 +29,7 @@ class SentenceDataset(Dataset):
         fwd_outputs = self.to_tensor(self.fwd_output[index])
         bwd_inputs = self.to_tensor(self.bwd_input[index])
         bwd_outputs = self.to_tensor(self.bwd_output[index])
+      
         # batch_lengths = self.length[self.bacth_idx_list[index]]
 
         return fwd_inputs, fwd_outputs, bwd_inputs, bwd_outputs
