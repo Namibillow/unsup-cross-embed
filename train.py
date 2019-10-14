@@ -5,7 +5,7 @@ import torch
 import numpy as np
 
 from parse_config import ConfigParser
-from utils.train_utils import load_data, oversampling
+from utils.train_utils import load_data, oversampling, save_embedding
 from utils.data_loader import SentenceDataset, batchfy
 from model import BiLSTM
 from trainer import Trainer
@@ -34,9 +34,9 @@ def main_train(config):
     if len(src_data.tokenized_corpus) != len(tgt_data.tokenized_corpus):
         logger.debug("-- oversampling will be performed --")
         src_data, tgt_data = oversampling(src_data, tgt_data)
-        logger.debug("-- finished oversampling -- ")
+        logger.debug("-- finished o	passersampling -- ")
 
-    logger.debug("-- generating mini-batches of size %d -- ", config["batch_size"])
+    logger.debug("-- generating mini batches of size %d -- ", config["batch_size"])
     
     src_dataset = SentenceDataset(src_data.vectorized_corpus, src_data.length, config["batch_size"], src_vocab.special_tokens)
     tgt_dataset = SentenceDataset(tgt_data.vectorized_corpus, tgt_data.length, config["batch_size"], tgt_vocab.special_tokens)
@@ -69,8 +69,13 @@ def main_train(config):
     logger.debug("++ training is done ++")
     
     logger.debug("-- saving the embedding --")
+
     # Save the embedding 
-    # config.save_file()
+    save_embedding(best_model.embedding_src, config["emb_dim"], src_vocab, config.save_dir, config["src_data_prefix"])
+    save_embedding(best_model.embedding_tgt, config["emb_dim"], tgt_vocab, config.save_dir, config["tgt_data_prefix"])
+
+    logger.debug("-- completed --")
+
 
 if __name__ == "__main__": 
     args = argparse.ArgumentParser(description="Train for CLWE")
@@ -118,7 +123,7 @@ if __name__ == "__main__":
         "--save",
         type=str,
         default=None,
-        help="file path to save the output"
+        help="file path to sapasst_datave the output"
     )
 
     # custom cli options to modify configuration from default values give in config file
@@ -136,4 +141,4 @@ if __name__ == "__main__":
 
     ################################
     # Test run 
-    # python3 train.py -c parameters.json -d data/processed_data --lang en --data_prefix en_50k -s result_emb/
+    #  python3 train.py -c parameters.json --src_data data/processed_data/low_resource/ja --src_data_prefix ja_50K --tgt_data data/processed_data/low_resource/en --tgt_data_prefix en_50K -s results

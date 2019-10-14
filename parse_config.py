@@ -44,7 +44,8 @@ class ConfigParser:
 
         exper_name = self.config['name']
 
-        print(f"Result will be saved in {save_dir} \n")
+        print(f"Result will be saved in {save_dir}")
+        
         self._save_dir = save_dir / 'embed' / exper_name / timestamp
         self._log_dir = save_dir / 'log' / exper_name / timestamp
 

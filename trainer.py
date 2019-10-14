@@ -1,4 +1,4 @@
-import pathlib 
+from pathlib import Path
 import time 
 
 from numpy import inf
@@ -47,11 +47,11 @@ class Trainer:
         self.cumloss_old = np.inf 
         self.cumloss_new = np.inf 
 
-        self.log_step = int(np.sqrt(self.total_batches)) * 2
+        self.log_step = int(np.sqrt(self.total_batches)) * 3
 
     def init_model(self):
         """
-        initialize all of the model parameters using an uniform distribution
+        - initialize all of the model parameters using an uniform distribution
         """
         for param in self.model.parameters():
             param.data.uniform_(self.weight_init_range[0], self.weight_init_range[1])
@@ -65,7 +65,7 @@ class Trainer:
 
     def set_optimizer(self, opt_type="SGD", lr_rate=0.5):
         """
-        set optimizer specified 
+        - set optimizer specified 
 
         inputs:
             opt_type: (str) optimizer type
@@ -79,12 +79,12 @@ class Trainer:
 
     def calc_loss(self, pred, correct):
         """
-            Computer the corss entropy loss given outputs from the model and labels for all tokens
-            Exclude loss terms for PADding tokens.
+        - Compute the corss entropy loss given outputs from the model and labels for all tokens
+        - Exclude loss terms for PADding tokens.
         
         inputs:  
-            pred: (Variable) dimension - log softmax output of the model. soft maxed scores of shape (batch_size, sent_len, vocabs)
-            correct: (Variable) dimension - (batch_size, sent_len)
+            pred: log softmax output of the model. soft maxed scores of shape (batch_size, sent_len, vocabs)
+            correct:  a batch of targets for the pred (batch_size, sent_len) stores index of vocab
 
         returns:
             loss: (float) a total loss for the batch 
@@ -105,11 +105,11 @@ class Trainer:
 
     def _train_batch(self, inputs, targets):
         """
-        train logic for a batch
+        - train logic for a batch
         
         inputs:
-            inputs: a batch of inputs
-            targets: a batch of targets for the inputs
+            inputs: a batch of inputs (batch_size * sent_len)
+            targets: (Tensor) a batch of targets for the inputs (batch_size * sent_len)
 
         return: 
         """
@@ -127,13 +127,13 @@ class Trainer:
 
     def _train_epoch(self, epoch):
         """
-        training logic for an epoch
+        - training logic for an epoch
         
         input:
             epoch: (int) current training epoch.
             
         return:    
-            cumloss: 
+            cumloss: (int) cumilative loss per epoch
         """
         self.model.train()
 
@@ -169,7 +169,7 @@ class Trainer:
 
     def train(self):
         """
-        full training logic
+        - full training logic
 
         return:
             model
@@ -188,8 +188,8 @@ class Trainer:
             elapsed_time = time.time() - start
             self.cumloss_new = cumloss/self.total_batches
 
-            self.logger.debug('Time taken for 1 epoch {:.2f} sec\n'.format(elapsed_time))
-            self.logger.info("Train Epoch: {}/{} Total loss: {:.6f}.".format(epoch, self.epochs ,self.cumloss_new))
+            self.logger.info('Time taken for {} epoch {:.2f} sec'.format(epoch, elapsed_time))
+            self.logger.info("-- Train Epoch: {}/{} Total loss: {:.6f} --".format(epoch, self.epochs ,self.cumloss_new))
 
             improvement_rate = self.cumloss_new / self.cumloss_old
             self.logger.debug("loss improvement rate: {:.4f}".format(improvement_rate))
@@ -201,13 +201,13 @@ class Trainer:
                 break
         
             if epoch % self.save_period == 0:
-                self._save_checkpoint(epoch, remove_models)
+                self._save_checkpoint(epoch, self.remove_models)
 
         return self.model 
 
     def _prepare_device(self, n_gpu_use):
         """
-        setup GPU device if available, move model into configured device
+        - setup GPU device if available, move model into configured device
 
         input:
             n_gpu_use: (int) number of GPU to be used. 
@@ -236,7 +236,7 @@ class Trainer:
 
     def _save_checkpoint(self, epoch, remove_models=True):
         """
-        saving checkpoints
+        - saving checkpoints
         
         inputs:
             epoch: (int) current epoch number
@@ -248,7 +248,7 @@ class Trainer:
         }
         filename = str(self.checkpoint_dir / 'checkpoint-epoch{}.model'.format(epoch))
         torch.save(state, filename)
-        self.logger.info("Saving checkpoint: {} ...".format(filename))
+        self.logger.info("Saving checkpoint: {}".format(filename))
         if remove_models and epoch != 1:
             filename = Path(self.checkpoint_dir / 'checkpoint-epoch{}.model'.format(epoch-1))
             filename.unlink()

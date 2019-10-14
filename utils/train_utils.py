@@ -5,7 +5,7 @@ import numpy as np
 
 def load_data(data_path, data_prefix):
 	"""
-		- Load the data from given data_path and data_prefix
+	- Load the data from given data_path and data_prefix
 	"""
 
 	file_path = Path(data_path)
@@ -51,11 +51,36 @@ def oversampling(src, tgt):
 
 
 def augment_data(self,lines, rep, ramdom_idx):
-        out = lines.copy()
-        out = out * rep # repeat 
-        out += [lines[idx] for idx in ramdom_idx] # add remainder
-        return out
+	"""
+	- Augment data to have same sentences with larger dataset
+	"""
+	out = lines.copy()
+	out = out * rep # repeat 
+	out += [lines[idx] for idx in ramdom_idx] # add remainder
+	return out
 
-def save_embedding():
-	pass
+def save_embedding(emb, emb_dim, vocabs, save_dir, file_name):
+	"""
+	- Save the word embedding from trained model
+	"""
+	embedding = emb.weight.data.tolist()
 
+	num_vocab = len(embedding)
+
+	vocab2emb = {}
+	for id in list(vocabs.index2word.keys())[:num_vocab]:
+		vocab2emb[vocabs.index2word[id]] = embedding[id]
+	
+	try:
+		del vocab2emb['<PAD>']
+		num_vocab-=1
+	except:
+		pass
+	
+	path = save_dir / (file_name + ".vec")
+	with path.open("w") as ff:
+		ff.write(str(num_vocab) + " " + str(emb_dim) + "\n")
+		for word, embed in vocab2emb.items():
+			content = word + " " + " ".join(map(str, embed)) + "\n"
+			ff.write(content)
+    
