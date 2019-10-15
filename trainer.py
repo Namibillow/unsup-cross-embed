@@ -114,7 +114,7 @@ class Trainer:
         return: 
         """
         self.optimizer.zero_grad() 
-        batch_size, sent_len, vocabs = inputs.size()
+        extra_dim, batch_size, sent_len = inputs.size()
         inputs = inputs.view(1* batch_size, -1)
         softmax_score = self.model(inputs)
         loss = self.calc_loss(softmax_score, targets)
@@ -174,8 +174,6 @@ class Trainer:
         return:
             model
         """
-        not_improved_count = 0
-        saved_model = False 
 
         for epoch in range(self.start_epoch, self.epochs + 1):
 
@@ -189,7 +187,7 @@ class Trainer:
             self.cumloss_new = cumloss/self.total_batches
 
             self.logger.info('Time taken for {} epoch {:.2f} sec'.format(epoch, elapsed_time))
-            self.logger.info("-- Train Epoch: {}/{} Total loss: {:.6f} --".format(epoch, self.epochs ,self.cumloss_new))
+            self.logger.info("-- Train Epoch: {}/{} Total loss: {:.6f} --".format(epoch, self.epochs ,cumloss))
 
             improvement_rate = self.cumloss_new / self.cumloss_old
             self.logger.debug("loss improvement rate: {:.4f}".format(improvement_rate))
@@ -197,7 +195,7 @@ class Trainer:
 
             if (improvement_rate > self.config["stop_threshold"]):
                 self.logger.info("Validation performance didn\'t improve for {} epochs. "
-                                     "Training stops.".format(epochs))
+                                     "Training stops.".format(epoch))
                 break
         
             if epoch % self.save_period == 0:
