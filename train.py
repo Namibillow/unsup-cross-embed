@@ -4,11 +4,11 @@ import collections
 import torch 
 import numpy as np
 
+from model import BiLSTM
 from parse_config import ConfigParser
+from trainer import Trainer
 from utils.train_utils import load_data, oversampling, save_embedding
 from utils.data_loader import SentenceDataset, batchfy
-from model import BiLSTM
-from trainer import Trainer
 
 def main_train(config): 
     
@@ -32,17 +32,17 @@ def main_train(config):
 
     # check for need of oversampling 
     if len(src_data.tokenized_corpus) != len(tgt_data.tokenized_corpus):
-        logger.debug("-- oversampling will be performed --")
+        logger.info("-- oversampling will be performed --")
         src_data, tgt_data = oversampling(src_data, tgt_data)
-        logger.debug("-- finished o	passersampling -- ")
+        logger.info("-- finished oversampling -- ")
 
     logger.debug("-- generating mini batches of size %d -- ", config["batch_size"])
     
     src_dataset = SentenceDataset(src_data.vectorized_corpus, src_data.length, config["batch_size"], src_vocab.special_tokens)
     tgt_dataset = SentenceDataset(tgt_data.vectorized_corpus, tgt_data.length, config["batch_size"], tgt_vocab.special_tokens)
 
-    src_batches = batchfy(dataset=src_dataset, batch_size=1, shuffle=False) 
-    tgt_batches = batchfy(dataset=tgt_dataset, batch_size=1, shuffle=False)
+    src_batches = batchfy(dataset=src_dataset, batch_size=1, shuffle=True) 
+    tgt_batches = batchfy(dataset=tgt_dataset, batch_size=1, shuffle=True)
     
     total_batches = len(src_dataset.bacth_idx_list)
     logger.debug("-- total of %d batches are created --", total_batches)

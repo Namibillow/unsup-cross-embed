@@ -1,9 +1,9 @@
-import os
-import logging
-from pathlib import Path
-from functools import reduce, partial
-from operator import getitem
 from datetime import datetime
+from functools import reduce
+import logging
+from operator import getitem
+import os
+from pathlib import Path
 
 from utils.logger import setup_logging
 from utils.utils import read_json, write_json
@@ -66,7 +66,6 @@ class ConfigParser:
     def save_file(self, content, fname):
 
         write_json(content, self.save_dir / fname)
-
         
     def __getitem__(self, name):
         return self.config[name]

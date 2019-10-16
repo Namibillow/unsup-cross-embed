@@ -1,7 +1,7 @@
+import numpy as np 
 from pathlib import Path 
 import pickle
 import random
-import numpy as np 
 
 def load_data(data_path, data_prefix):
 	"""
@@ -33,30 +33,37 @@ def oversampling(src, tgt):
 	"""
 	- Randomly repeat some minority samples and balance the number of samples between the dataset 
 	"""
+	
 	max_sent, less_sent = (src, tgt) if len(src.vectorized_corpus) > len(tgt.vectorized_corpus) else (tgt, src)
-
 	max_num_sent, less_num_sent = len(max_sent.vectorized_corpus), len(less_sent.vectorized_corpus)
 
-	logger.debug("Max sentence:  %d", max_num_sent)
-	logger.debug("Less sentence: %d", less_num_sent)
+	print("Max sentence: ", max_num_sent)
+	print("Less sentence: ", less_num_sent)
 
 	repeat = max_num_sent // less_num_sent
 	remainder = max_num_sent % less_num_sent
 	random_idx = random.sample(range(less_num_sent), remainder)
 
-	less_sent.vectorized_corpus = augment_data(less_sent.vectorized_corpus, repeat, remainder, random_idx)
-	less_sent.length = augment_data(less_sent.length, rep, ramdom_idx)
+	less_sent.vectorized_corpus = augment_data(less_sent.vectorized_corpus, repeat, random_idx)
+
+	less_sent.length = augment_data(less_sent.length, repeat, random_idx)
+
+	assert len(max_sent.vectorized_corpus) == len(less_sent.vectorized_corpus)
 
 	return (max_sent, less_sent) if max_sent == src else (less_sent, max_sent)
 
 
-def augment_data(self,lines, rep, ramdom_idx):
+def augment_data(lines, rep, random_idx):
 	"""
 	- Augment data to have same sentences with larger dataset
 	"""
 	out = lines.copy()
-	out = out * rep # repeat 
-	out += [lines[idx] for idx in ramdom_idx] # add remainder
+
+	out = np.concatenate([out] * rep, axis=0)
+	
+	if not random_idx:
+		rem = [lines[idx] for idx in random_idx] # add remainder
+		np.concatenate((out, rem), axis=0)
 	return out
 
 def save_embedding(emb, emb_dim, vocabs, save_dir, file_name):

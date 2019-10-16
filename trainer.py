@@ -16,6 +16,7 @@ class Trainer:
         self.device, device_ids = self._prepare_device(config['n_gpu'])
         
         self.weight_init_range = config["weight_init_range"]
+        self.grad_clipping = config["grad_clipping"]
 
         self.tgt_vocab = tgt_vocab
         self.src_vocab = src_vocab
@@ -26,9 +27,9 @@ class Trainer:
         self.model = self.model.to(self.device)
         if len(device_ids) > 1:
             self.model = torch.nn.DataParallel(model, device_ids=device_ids) # train with multiple GPUs
-
+            self.model = self.model.module
         self.cross_entropy = nn.CrossEntropyLoss(ignore_index=self.src_vocab.special_tokens["PAD"], reduction='none')
-        self.set_optimizer(config["optimizer"]["type"], config["optimizer"]["args"]["lr"])
+        self.set_optimizer(config["optimizer"]["type"], config["optimizer"]["args"])
 
         self.src_data_loader = src_data_loader
         self.tgt_data_loader = tgt_data_loader
@@ -63,19 +64,21 @@ class Trainer:
         self.model.embedding_src.weight.data[self.src_vocab.special_tokens["UNK"]] = 0
         self.model.embedding_tgt.weight.data[self.tgt_vocab.special_tokens["UNK"]] = 0
 
-    def set_optimizer(self, opt_type="SGD", lr_rate=0.5):
+    def set_optimizer(self, opt_type, args):
         """
         - set optimizer specified 
 
         inputs:
             opt_type: (str) optimizer type
-            lr_rate: (float) learning rate
+            args: (dict) contains learning rate and other necessary info
 
         """
         if opt_type == "SGD":
-            self.optimizer = optim.SGD(self.model.parameters(), lr=lr_rate)
+            self.optimizer = optim.SGD(self.model.parameters(), lr=args["lr"])
         elif opt_type == "ASGD":
-            self.optimizer = optim.ASGD(self.model.parameters(), lr=lr_rate)
+            self.optimizer = optim.ASGD(self.model.parameters(), lr=args["lr"])
+        elif opt_type == "ADAM":
+            self.optimizer = optim.Adam(self.model.parameters(), lr=args["lr"], weight_decay=args["weight_decay"], amsgrad=args["amsgrad"])
 
     def calc_loss(self, pred, correct):
         """
@@ -112,6 +115,7 @@ class Trainer:
             targets: (Tensor) a batch of targets for the inputs (batch_size * sent_len)
 
         return: 
+            loss: (float) converted from tensor size 1 
         """
         self.optimizer.zero_grad() 
         extra_dim, batch_size, sent_len = inputs.size()
@@ -120,9 +124,9 @@ class Trainer:
         loss = self.calc_loss(softmax_score, targets)
         # Calculate loss 
         loss.backward()
-        nn.utils.clip_grad_norm_(self.model.parameters(), 5.0)
+        nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clipping)
         self.optimizer.step()
-
+        
         return loss.data.tolist()
 
     def _train_epoch(self, epoch):
