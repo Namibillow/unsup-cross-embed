@@ -123,7 +123,7 @@ if __name__ == "__main__":
         "--save",
         type=str,
         default=None,
-        help="file path to sapasst_datave the output"
+        help="file path to  save the output"
     )
 
     # custom cli options to modify configuration from default values give in config file
