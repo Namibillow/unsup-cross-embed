@@ -13,3 +13,9 @@ def write_json(content, fname):
     with fname.open('wt') as handle:
         json.dump(content, handle, indent=4, sort_keys=False)
 
+
+def load_emb(emb_file):
+    pass
+
+def load_dict(dict_file):
+    pass

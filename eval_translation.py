@@ -2,6 +2,8 @@ import argparse
 from pathlib import Path
 import numpy as np
 
+from utils.utils import load_dict, load_emb
+
 # Perform Bilingual lexicon extraction
 def cslc():
     knn_sim_bwd = xp.zeros(z.shape[0])
@@ -32,9 +34,6 @@ def mean_reciprocal_rank()):
     
     return sum of the precision / src_words 
 
-
-     
-
 def top_k_mean(m, k, inplace=False):  # TODO Assuming that axis is 1
     n = m.shape[0]
     ans = np.zeros(n, dtype=m.dtype)
@@ -49,9 +48,7 @@ def top_k_mean(m, k, inplace=False):  # TODO Assuming that axis is 1
         m.argmax(axis=1, out=ind1)
         ans += m[ind0, ind1]
         m[ind0, ind1] = minimum
-    print(ans)
-    print(ans / k)
-    print((ans/k).shape)
+
     return ans / k
 
 
@@ -102,20 +99,22 @@ if __name__ == "__main__":
         help="file path to save the output"
     )
 
-   args = parser.parse_args()
+    args = parser.parse_args()
 
     # read embedding 
-    src, x = read_emb(args.src_emb)
-    tgt, y = read_emb(args.tgt_emb)
+    src, x = load_emb(args.src_emb)
+    tgt, y = load_emb(args.tgt_emb)
     
     # read dictionary 
-    src2tgt = read_dict(args.dict)
+    src2tgt = load_dict(args.dict)
 
     # get save path 
     save_path = Path(args.save)
 
+    top_k_mean()
+
     cslc()
 
-    mean_avg_precision()
+    mean_reciprocal_rank()
 
     # write to a file or get logger 
