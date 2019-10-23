@@ -1,14 +1,15 @@
+from model import BiLSTM
+from parse_config import ConfigParser
+from trainer import Trainer
+from utils.train_utils import load_data, oversampling, save_embedding
+from utils.data_loader import SentenceDataset, batchfy
+
 import argparse 
 import collections
 
 import torch 
 import numpy as np
 
-from model import BiLSTM
-from parse_config import ConfigParser
-from trainer import Trainer
-from utils.train_utils import load_data, oversampling, save_embedding
-from utils.data_loader import SentenceDataset, batchfy
 
 def main_train(config): 
     

@@ -1,8 +1,8 @@
-import argparse
-from collections import namedtuple 
-
 from utils.build_vocabs import Dictionary
 from utils.preprocess_utils import Universal, Japanese
+
+import argparse
+from collections import namedtuple 
 
 """
 Handles text processing 

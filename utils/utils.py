@@ -1,6 +1,6 @@
 from collections import OrderedDict, defaultdict
 import json 
-from pathlib simport Path 
+from pathlib import Path 
 import random
 
 import numpy as np
@@ -18,44 +18,41 @@ def write_json(content, fname):
         json.dump(content, handle, indent=4, sort_keys=False)
 
 
-def load_emb(emb_file, dtype='float'):
+def load_emb(directory, emb_file, dtype='float'):
     """
     Load the embedding 
 
     returns:
-        words: (list) contains word
-        matrix: (np.array) containes vector for each word [count, dim]
+        word2emb: (dict) key -> word, value ->  embedding value
     """
-    embfile = open(emb_file, errors='surrogateescape')
+    path = directory / emb_file
+
+    assert path.is_file(), "file does not exist "
+
+    embfile = open(path, errors='surrogateescape')
     
     header = embfile.readline().split(" ")
     count = int(header[0])
     dim = int(header[1])
 
-    words = []
-    matrix = np.empty((count, dim), dtype=dtype)
+    word2emb = dict()
 
     for i in range(count):
         word, vec = embfile.readline().split(" ", 1)
 
-        words.append(word)
-        matrix[i] = np.fromstring(vec, sep=' ', dtype=dtype)
+        word2emb[word] = np.fromstring(vec, sep=' ', dtype=dtype)
     
-    return (words, matrix)
+    return word2emb
     
-def load_dict(dict_file, v_limit, src_word2ind, tgt_word2ind):
+def load_dict(dict_file):
     """
-    - Read dictionary and compute coverage
+    - Read dictionary
     
     return: 
-        src: (list) a list of indexes of src words
-        src2tgt (dict) key is src word index, value is a set of tgt word index
+        
     """
-
-    src2trg = defaultdict(set)
-    oov = set()
-    vocab = set()
-    reached = 0
+    src_word_list = []
+    tgt_word_list = [] 
 
     with open(dict_file, errors='surrogateescape') as f: 
         lines = list(f)
@@ -64,19 +61,10 @@ def load_dict(dict_file, v_limit, src_word2ind, tgt_word2ind):
     random.shuffle(lines)
 
     for line in lines:
-        src, trg = line.split()
-        if reached == limit:
-            break
-        try:
-            src_ind = src_word2ind[src]
-            trg_ind = tgt_word2ind[trg]
-            src2trg[src_ind].add(trg_ind)
-            vocab.add(src)
-            reached+=1
-        except KeyError:
-            oov.add(src)
-    src = list(src2trg.keys())
+        src, tgt = line.split()
+        src_word_list.append(src)
+        tgt_word_list.append(tgt)
 
-    print(f"{len(src2trg)}/{limit} pairs will be considered")
+    print(f"total of {len(lines)} pairs of words in the dictionary.")
 
-    return src, src2trg
+    return src_word_list, tgt_word_list

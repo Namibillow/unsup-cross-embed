@@ -1,3 +1,6 @@
+from utils.logger import setup_logging
+from utils.utils import read_json, write_json
+
 from datetime import datetime
 from functools import reduce
 import logging
@@ -5,8 +8,6 @@ from operator import getitem
 import os
 from pathlib import Path
 
-from utils.logger import setup_logging
-from utils.utils import read_json, write_json
 
 class ConfigParser:
     def __init__(self, args, options=""):
