@@ -7,11 +7,12 @@ import datetime
 
 import numpy as np
 
-def mean_reciprocal_rank(translation, src_words, tgt_words):
+def calc_score(translation, src_words, tgt_words):
 
     # translation => dict of list: key src words, value a list of indexes
-    num_src_words = len(idx_srot_by_csls)
+    num_src_words = len(translation)
     recip_rank = 0
+    num_correct = 0
     correct = []
 
     for i in range(num_src_words):
@@ -21,34 +22,12 @@ def mean_reciprocal_rank(translation, src_words, tgt_words):
             if i == ind:
                 correct.append((i, ind, j+1))
                 recip_rank += 1 / (j+1)
+                num_correct+=1
             
     prec = recip_rank / num_src_words
+    num_correct/= num_src_words
     
-    return prec, correct 
-
-def top_k_mean(m, k, inplace=False): 
-    """
-    sum up to top k closest words and take the average
-
-    return:
-        ans: [batch_size,]
-    """
-    # m => [batch_size, num_src_words]
-    n = m.shape[0] # n => batch_size
-    ans = np.zeros(n, dtype=m.dtype) # ans => [batch_size, ]
-    if k <= 0:
-        return ans
-    if not inplace:
-        m = np.array(m)
-    ind0 = np.arange(n) # ind0 => [batch_size, ]
-    ind1 = np.empty(n, dtype=int) # ind1 => [batch_size, ]
-    minimum = m.min()
-    for i in range(k):
-        m.argmax(axis=1, out=ind1)
-        ans += m[ind0, ind1]
-        m[ind0, ind1] = minimum
-
-    return ans / k
+    return (prec, num_correct), correct 
 
 def length_normalize(matrix):
     """
@@ -58,11 +37,8 @@ def length_normalize(matrix):
     norms[norms == 0] = 1
     matrix /= norms[:, np.newaxis]
 
-
 if __name__ == "__main__": 
     parser = argparse.ArgumentParser(description="Train for CLWE")
-    # python3 eval_translate.py -d data/eval_dict/ -l 1000 -src_emb ja_50K.vec -tgt_emb en_1000K.vec
-    # -k 10 -dir results/low_resource/cs_50K_en_1000K/embed/Bi_LSTM/1017_105806/ 
     parser.add_argument(
         "-d", 
         "--dict", 
@@ -75,7 +51,7 @@ if __name__ == "__main__":
         "-l",
         "--limit",
         type=int,
-        default=1000,
+        default=None,
         help="number of vocaburay to take in account for evaluation "
     )
 
@@ -126,6 +102,8 @@ if __name__ == "__main__":
     src_word_list, tgt_word_list = load_dict(args.dict)
 
     num_words = len(src_word_list) if len(src_word_list) > len(src_word2emb) else len(src_word2emb)
+    if not args.limit:
+        args.limit = num_words
     limit = args.limit if args.limit < num_words else num_words
 
     oov = 0
@@ -176,17 +154,20 @@ if __name__ == "__main__":
     ### cossim_sorted_T => [tgt_words_limit, src_words_limit]
     cossim_sorted_T = np.sort(knn_sim_bwd.T, axis=1)[:,::-1]
 
-    K = 10
-    ### rT 
-    rT = np.array([np.mean(x[0:K]) for x in cossim_sorted]).reshape(-1, 1)  # src_len,1
-    rS = np.array([np.mean(x[0:K]) for x in cossim_sorted_T]).reshape(1, -1)  # 1,tgt_len
-    similarities = 2* knn_sim_bwd - - np.broadcast_to(rT, knn_sim_bwd.shape) - np.broadcast_to(rS, knn_sim_bwd.shape)
+    K = 10 # Default
+    ### rT => [src_word_limit, 1]
+    rT = np.array([np.mean(x[0:K]) for x in cossim_sorted]).reshape(-1, 1)
+    ### rS => [1, tgt_word_limit]
+    rS = np.array([np.mean(x[0:K]) for x in cossim_sorted_T]).reshape(1, -1) 
+    ### similarities => [src_words_limit, tgt_words_limit]
+    similarities = 2* knn_sim_bwd - np.broadcast_to(rT, knn_sim_bwd.shape) - np.broadcast_to(rS, knn_sim_bwd.shape)
+    ### nn => [src_words_limit, num_ranks]
     nn = similarities.argsort(axis=1)[:,-args.num_ranks:][:,::-1]
 
-    acc, correct = mean_reciprocal_rank(nn, src_covered_words, tgt_covered_words)
+    acc, correct = calc_score(nn, src_covered_words, tgt_covered_words)
 
-    for (s, t, rank) in correct[:50]:
-        print(f"RANK: {rank} # SRC: {src_covered_words[s]} => TGT: {tgt_covered_words[t]}")
+    for (s, t, rank) in correct[:10]:
+        print(f"RANK: {rank}  | SRC: {src_covered_words[s]} => TGT: {tgt_covered_words[t]}")
     
     print(f"{len(correct)}/{reached} words were correct.")
 
@@ -197,9 +178,15 @@ if __name__ == "__main__":
 
     with save.open(mode=append_write) as f:
         f.write(f"-- {(datetime.datetime.now()).strftime('%Y-%m-%d %H:%M')} -- \n")
-        f.write(f"Dictinary pairs used: {reached}\n")
-        f.write(f"Accuracy with MAP@{args.num_ranks}: {acc} \n")
+        f.write(f"Dictinary pairs used: {reached}/{len(src_word_list)}\n")
+        f.write(f"Accuracy with MAP@{args.num_ranks}: {acc[0]} \n")
+        f.write(f"Accuracy with P@{args.num_ranks}: {acc[1]} \n")
     
     print(f"Source: {args.src_emb}")
     print(f"Target: {args.tgt_emb}")
-    print(f"Accuracy with MAP@{args.num_ranks}: {acc * 100}%")
+    print(f"Accuracy with MAP@{args.num_ranks}: {acc[0]}")
+    print(f"Accuracy with P@{args.num_ranks}: {acc[1]}")
+
+    # Sample run
+    # python3 eval_translate.py -d data/eval_dict/ -l 1000 -src_emb ja_50K.vec -tgt_emb en_1000K.vec
+    # -k 10 -dir results/low_resource/cs_50K_en_1000K/embed/Bi_LSTM/1017_105806/ 
