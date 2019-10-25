@@ -7,10 +7,11 @@ import re
 import regex
 
 # Tokenizers
-import MeCab # Japanese 
+from konlpy.tag import Okt # korean
+import MeCab # Japanese
+from pythainlp import word_tokenize # Thai  
 from polyglot.text import Text # Tamil, Turkish
 from sacremoses import MosesTokenizer # rest of languages
-
 """
 Utility class for preprocessing text
 """
@@ -119,6 +120,11 @@ class Universal:
 
         if self.lang in ["ja"]: # japanese
             sentence = regex.sub(u"[^\r\n\p{Han}\p{Hiragana}\p{Katakana}ー。！？]", "", sentence)
+        elif self.lang in ["ko"]: # korean 
+            sentence = regex.sub(u'[^\r\n .?!/@$%~ㄱ-ㅣ가-힣]+', " ", sentence)  
+        elif self.lang in ["th"]: # thai 
+            # range \u0E00-\u0E7F
+            sentence = regex.sub(u"[^\r\n .?!/@$%~\p{Thai}']", "", sentence)
         elif self.lang in ["ta"]: # tamile
             sentence = regex.sub(u"[^ \r\n\p{Tamil}.?!\-]", " ", sentence)
         elif self.lang in ["ru"]: # russian
@@ -158,9 +164,7 @@ class Universal:
 class Japanese(Universal):
     """ tokenize Japanese corpus """
     def tokenize(self, corpus, tokenizer=None):
-
         mt = MeCab.Tagger('-d /usr/local/lib/mecab/dic/mecab-ipadic-neologd')
-
         tokenized_corpus = []
         for sentence in corpus:
             sentence = self.text_preprocess(sentence)
@@ -175,3 +179,28 @@ class Japanese(Universal):
 
         return tokenized_corpus
     
+class Thai(Universal):
+    """ tokenize Thai corpus """
+    def tokenize(self, corpus, tokenizer=None):
+        tokenized_corpus = []
+        for sentence in corpus:
+            sentence = self.text_preprocess(sentence)
+            text = word_tokenize(sentence, keep_whitespace=False)
+            tokenized_corpus.append(list(text))
+
+        return tokenized_corpus
+
+
+class Korean(Universal):
+    """ tokenize Korean corpus """
+    def tokenize(self, corpus, tokenizer=None):
+        okt = Okt()
+        tokenized_corpus = []
+        for sentence in corpus:
+            sentence = self.text_preprocess(sentence)
+            text = okt.morphs(sentence)
+            tokenized_corpus.append(list(text))
+
+        return tokenized_corpus
+
+        

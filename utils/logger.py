@@ -1,6 +1,7 @@
 from utils.utils import read_json
 
 import logging
+import logging.config
 from pathlib import Path
 
 

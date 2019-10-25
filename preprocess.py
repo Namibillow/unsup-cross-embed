@@ -1,5 +1,5 @@
 from utils.build_vocabs import Dictionary
-from utils.preprocess_utils import Universal, Japanese
+from utils.preprocess_utils import Universal, Japanese, Thai, Korean
 
 import argparse
 from collections import namedtuple 
@@ -74,6 +74,12 @@ if __name__ == "__main__":
         if d.lang == "ja": # japanese
             language = Japanese(*d)
             tokenizer = None
+        elif d.lang == "th": # thai
+            language = Thai(*d)
+            tokenizer = None 
+        elif d.lang == "ko":
+            language = Korean(*d)
+            tokenizer = None 
         else:
             language = Universal(*d)
             # If language is Tamil or Turkish
