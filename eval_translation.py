@@ -120,7 +120,8 @@ if __name__ == "__main__":
     for i in range(num_dict_words):
         if reached == limit:
             break
-
+        
+        # Encode the word here
         if (src_word_list[i] in src_word2emb and tgt_word_list[i] in tgt_word2emb):
             src_emb = src_word2emb[src_word_list[i]]
             tgt_emb = tgt_word2emb[tgt_word_list[i]]
