@@ -26,7 +26,7 @@ class Trainer:
         
         self.model = self.model.to(self.device)
         if len(device_ids) > 1:
-            self.model = torch.nn.DataParallel(model, device_ids=device_ids) # train with multiple GPUs
+            self.model = torch.nn.DataParallel(model, device_ids=[2,3]) # train with multiple GPUs
             self.model = self.model.module
         self.cross_entropy = nn.CrossEntropyLoss(ignore_index=self.src_vocab.special_tokens["PAD"], reduction='none')
         self.set_optimizer(config["optimizer"]["type"], config["optimizer"]["args"])

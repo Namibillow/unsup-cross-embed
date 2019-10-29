@@ -1,25 +1,65 @@
 #!/bin/bash
 
-# OUTPATH=low_resource/en
-# PREFIX=en_50K_bpe
-# DATA=en_50K_processed.txt
+# OUTPATH=low_resource/jaen
 
-OUTPATH=data/processed_data/${1}  # path where processed files will be stored
-PREFIX=${2} # Output file prefix
-DATA=$OUTPATH/${3} # path to the text
+# PREFIX=en_50K_bpe
+# or
+# PREFIX=ja_50K_en_50K_bpe
+
+# SRC_DATA=en/en_50K_processed.txt
+# TGT_DATA=ja/ja_50K_processed.txt
+
+OUTPATH="data/processed_data/${1}"  # path where processed files will be stored
+echo "Writing to ${OUTPATH}. To change this, set the OUTPUT_DIR environment variable."
+
+PREFIX=${OUTPATH}/${2} # Output file prefix
+
+SRC_DATA=${3} # relative path to the text
+
+if [ ! -z "$4" ]
+  then
+    echo "Will train BPE jointly"
+    TGT_DATA=${4}
+fi
+
 FASTBPE=$HOME/fastBPE/fast  # path to the fastBPE tool
-NUMV=16000
+NUMV=32000 # number of merges
 
 # create output dir if not exist
 mkdir -p $OUTPATH
 
-# learn bpe codes on the training set (or only use a subset of it)
-$FASTBPE learnbpe $NUMV $DATA > "$OUTPATH/${PREFIX}_codes"
+if [ -z $TGT_DATA ]
+then # Separate training 
 
-$FASTBPE applybpe "$OUTPATH/${PREFIX}_${NUMV}.txt" $DATA "$OUTPATH/${PREFIX}_codes"
+    # learn bpe codes on the training set (or only use a subset of it)
+    $FASTBPE learnbpe $NUMV ${SRC_DATA} > "${PREFIX}_codes"
 
-# get train vocabulary 
-cat "$OUTPATH/${PREFIX}_${NUMV}.txt" | $FASTBPE getvocab - > "${OUTPATH}/${PREFIX}_${NUMV}.vocab"
+    $FASTBPE applybpe "${PREFIX}_${NUMV}_processed.txt" ${SRC_DATA} "${PREFIX}_codes"
+
+    # get train vocabulary 
+    cat "${PREFIX}_${NUMV}_processed.txt" | $FASTBPE getvocab - > "${PREFIX}_${NUMV}.vocab_dict"
+
+    NUMOFLINES=$(wc -l < "${PREFIX}_${NUMV}.vocab_dict")
+
+else # joint training 
+
+    $FASTBPE learnbpe $NUMV ${SRC_DATA} ${TGT_DATA} > "${PREFIX}_codes"
+    
+    # Apply learn bpe to both text 
+    $FASTBPE applybpe "${PREFIX}_${NUMV}_src_processed.txt" ${SRC_DATA} "${PREFIX}_codes"
+    $FASTBPE applybpe "${PREFIX}_${NUMV}_tgt_processed.txt" ${TGT_DATA} "${PREFIX}_codes"
+
+    cat "${PREFIX}_${NUMV}_src_processed.txt" "${PREFIX}_${NUMV}_tgt_processed.txt" | $FASTBPE getvocab - > "${PREFIX}_${NUMV}.vocab_dict"
+    NUMOFLINES=$(wc -l < "${PREFIX}_${NUMV}.vocab_dict")
+fi 
 
 # truncate the frequency info
-cat "${OUTPATH}/${PREFIX}_${NUMV}.vocab" | cut -f1 -d ' ' | sponge "${OUTPATH}/${PREFIX}_${NUMV}.vocab"
+cat "${PREFIX}_${NUMV}.vocab_dict" | cut -f1 -d ' ' | sponge "${PREFIX}_${NUMV}.vocab_dict"
+
+echo "Language: ${1}
+original file path: ${3}
+Number of merges performed: ${NUMV}
+Total vocaburaly: ${NUMOFLINES}
+" >> "${PREFIX}_${NUMV}_info.txt"
+
+echo "done"

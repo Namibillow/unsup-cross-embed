@@ -1,7 +1,7 @@
 {
     "name": "Bi-LSTM",
 
-    "n_gpu" : 4, 
+    "n_gpu" : 2, 
 
     "optimizer": {
         "type": "SGD",

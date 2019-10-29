@@ -57,8 +57,16 @@ if __name__ == "__main__":
         help="path to save the preprocessed data"
     )
 
+    parser.add_argument(
+        "-bpe",
+        action='store_true',
+        help="process already processed bpe applied text"
+    )
+
     args = parser.parse_args()
 
+    if args.bpe:
+           
     assert len(args.LANG) == len(args.FILE_PATH) == len(args.MIN_FREQ), "given number of languages, file_pathes, min_freq must be equal"
 
     Data = namedtuple("Data","lang file_path min_freq max_words num_sent save_path") 
