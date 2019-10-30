@@ -29,8 +29,6 @@ class Universal:
 
         print(f"building a dictionary for {self.lang}...")
 
-
-
     def read_corpus(self, seed=22):
         """
         - read corpus from a given file path 
@@ -74,23 +72,24 @@ class Universal:
             f.write(f"Minimum word frequency was set to {self.min_freq}\n")
             f.write(f"Maximum word count was set to {self.max_words}\n")
         
-        # example: en_50K.vocab_dict
-        vocab_file_name = self.lang + "_" + num_sent + "K.vocab_dict"
-        vocab_file_path = self.save_path / vocab_file_name
-
-        print(f"2/4: Saving {vocab_file_name}")
-        with vocab_file_path.open(mode="wb") as f:
-            pickle.dump(vocabulary,f)
 
         # example: en_50K_processed.txt 
         processed_file_name = self.lang + "_" + num_sent + "K_processed.txt"
         processed_file_path = self.save_path / processed_file_name
 
-        print(f"3/4: Saving {processed_file_name}")
+        print(f"2/4: Saving {processed_file_name}")
         with processed_file_path.open(mode="w") as f:
             for tokenized_sent in tokenized_corpus:
                 f.write(" ".join(tokenized_sent))
                 f.write("\n")
+
+        # example: en_50K.vocab_dict
+        vocab_file_name = self.lang + "_" + num_sent + "K.vocab_dict"
+        vocab_file_path = self.save_path / vocab_file_name
+
+        print(f"3/4: Saving {vocab_file_name}")
+        with vocab_file_path.open(mode="wb") as f:
+            pickle.dump(vocabulary,f)
 
         # exampl: en_50K.dataset
         dataset_file_name = self.lang + "_" + num_sent + "K.dataset"
@@ -203,4 +202,21 @@ class Korean(Universal):
 
         return tokenized_corpus
 
-        
+
+def save_data_only(save_path, prefix, dataset, vocabulary):
+    # example: en_50K.vocab_dict
+    vocab_file_name = prefix + ".vocab_dict"
+    vocab_file_path = save_path / vocab_file_name
+
+    print(f"1/2: Saving {vocab_file_name}")
+    with vocab_file_path.open(mode="wb") as f:
+        pickle.dump(vocabulary,f)
+
+    # exampl: en_50K.dataset
+    dataset_file_name = prefix + ".dataset"
+    dataset_file_path = save_path / dataset_file_name
+
+    print(f"2/2: Saving {dataset_file_name}")
+    with dataset_file_path.open(mode="wb") as f:
+        pickle.dump(dataset,f)
+            

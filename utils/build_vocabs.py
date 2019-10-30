@@ -20,7 +20,7 @@ class Dictionary:
         self.dataset = Dataset()
         self.vocabulary = Vocabulary()
 
-    def build_vocab_dict(self):
+    def build_vocab_dict(self,vocab=None):
         """
         - builds a vocabulary dictionary 
         """
@@ -40,21 +40,22 @@ class Dictionary:
         index2word[BOS_BWD] = "<BOS_BWD>"
         index2word[EOS] = "<EOS>"
 
-        # Count the frequency and sort them 
-        wordCounter = Counter(chain.from_iterable(self.corpus))
-        wordFreq = OrderedDict(wordCounter.most_common())
+        if not vocab:
+            # Count the frequency and sort them 
+            wordCounter = Counter(chain.from_iterable(self.corpus))
+            wordFreq = OrderedDict(wordCounter.most_common())
 
-        # Remove objects whose counts are less than threshold in counter 
-        words = np.array(list(wordFreq.keys()))
-        freq = np.array(list(wordFreq.values()))
+            # Remove objects whose counts are less than threshold in counter 
+            words = np.array(list(wordFreq.keys()))
+            freq = np.array(list(wordFreq.values()))
 
-        idx = freq >= self.min_freq
-        vocab = words[idx].tolist()
+            idx = freq >= self.min_freq
+            vocab = words[idx].tolist()
 
-        # print(f"Vocabulary count: {len(vocab)}/{self.max_vocab}")
+            # print(f"Vocabulary count: {len(vocab)}/{self.max_vocab}")
 
-        vocab = vocab[:self.max_vocab+1]
-                
+            vocab = vocab[:self.max_vocab+1]
+                    
         index = len(word2index)
 
         for word in vocab:

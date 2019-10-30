@@ -34,7 +34,6 @@ class BiLSTM(nn.Module):
 
         self.output_layer_src = nn.Linear(in_features=self.hidden_dim, out_features=self.src_vocab.vocab_len, bias=False)
         self.output_layer_tgt = nn.Linear(in_features=self.hidden_dim, out_features=self.tgt_vocab.vocab_len, bias=False)
-        
 
     def switch_lstm(self, type):
         """
@@ -66,7 +65,7 @@ class BiLSTM(nn.Module):
         else:
             raise Exception("Invalid")
 
-    def forward(self, inputs):
+    def forward(self, inputs, **kwargs):
         """
         input:
             inputs:
@@ -74,9 +73,13 @@ class BiLSTM(nn.Module):
         return:
             score:
         """
+        self.switch_lang(kwargs["switch_lang"])
+        if kwargs["share_weights"] != -1:
+            self.share_weights()
+        self.switch_lstm(kwargs["switch_lstm"])
 
+        self.lstm.flatten_parameters()
         inputs = self.embedding(inputs)
-
         h_t, (h_last, c_last) = self.lstm(inputs)
 
         score = self.output_layer(self.dropout(h_t))

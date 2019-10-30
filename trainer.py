@@ -24,10 +24,15 @@ class Trainer:
         self.model = model
         self.init_model() #initialize model 
         
-        self.model = self.model.to(self.device)
+        self.multi_gpu = False
+    
         if len(device_ids) > 1:
-            self.model = torch.nn.DataParallel(model, device_ids=[2,3]) # train with multiple GPUs
-            self.model = self.model.module
+            self.multi_gpu = True
+            self.model = torch.nn.DataParallel(model, device_ids=[0,2,3]) # train with multiple GPUs
+       
+
+        self.model = self.model.to(self.device)
+        
         self.cross_entropy = nn.CrossEntropyLoss(ignore_index=self.src_vocab.special_tokens["PAD"], reduction='none')
         self.set_optimizer(config["optimizer"]["type"], config["optimizer"]["args"])
 
@@ -106,7 +111,7 @@ class Trainer:
         loss = torch.sum(loss) / self.batch_size 
         return loss
 
-    def _train_batch(self, inputs, targets):
+    def _train_batch(self, inputs, targets, **kwargs):
         """
         - train logic for a batch
         
@@ -120,7 +125,7 @@ class Trainer:
         self.optimizer.zero_grad() 
         extra_dim, batch_size, sent_len = inputs.size()
         inputs = inputs.view(1* batch_size, -1)
-        softmax_score = self.model(inputs)
+        softmax_score = self.model(inputs, **kwargs)
         loss = self.calc_loss(softmax_score, targets)
         # Calculate loss 
         loss.backward()
@@ -148,17 +153,17 @@ class Trainer:
 
             for curr, (fwd_inputs, fwd_outputs, bwd_inputs, bwd_outputs) in enumerate([src, tgt]):
                 
-                self.model.switch_lang(curr)
-                self.model.share_weights()
+                # self.model.switch_lang(curr)
+                # self.model.module.share_weights()
 
                 fwd_inputs, fwd_outputs = fwd_inputs.to(self.device), fwd_outputs.to(self.device)
                 bwd_inputs, bwd_outputs = bwd_inputs.to(self.device), bwd_outputs.to(self.device)
 
-                self.model.switch_lstm("fwd")
-                loss += self._train_batch(fwd_inputs, fwd_outputs)
+                # self.model.module.switch_lstm("fwd")
+                loss += self._train_batch(fwd_inputs, fwd_outputs, switch_lang=curr, switch_lstm="fwd", share_weights=1)
 
-                self.model.switch_lstm("bwd")
-                loss += self._train_batch(bwd_inputs, bwd_outputs)
+                # self.model.module.switch_lstm("bwd")
+                loss += self._train_batch(bwd_inputs, bwd_outputs, switch_lang=curr, switch_lstm="bwd", share_weights=-1)
             
             cumloss+= loss
 
@@ -205,7 +210,7 @@ class Trainer:
             if epoch % self.save_period == 0:
                 self._save_checkpoint(epoch, self.remove_models)
 
-        return self.model 
+        return self.model.module if self.multi_gpu else self.model
 
     def _prepare_device(self, n_gpu_use):
         """
@@ -230,7 +235,7 @@ class Trainer:
 
         device = torch.device('cuda:0' if n_gpu_use > 0 else 'cpu')
         
-        self.logger.debug("-- Total of %d GPU is used for the training --", n_gpu_use)
+        self.logger.info("-- Total of %d GPU is used for the training --", n_gpu_use)
 
         list_ids = list(range(n_gpu_use))
 
