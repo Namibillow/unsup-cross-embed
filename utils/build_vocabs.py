@@ -88,6 +88,10 @@ class Dictionary:
         ids = [self.sentence2idxs(sentence) for sentence in tokenized_sentences]
         lengths = [len(s) for s in ids]
 
+        # print(tokenized_sentences[:5])
+        # print(ids[:5])
+        # print(lengths[:5])
+        # print(max(lengths))
         # update 
         self.dataset.update(ids, tokenized_sentences, lengths)
 

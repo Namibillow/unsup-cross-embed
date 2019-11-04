@@ -1,5 +1,6 @@
 from pathlib import Path
 import time 
+import gc
 
 from numpy import inf
 import numpy as np
@@ -28,7 +29,7 @@ class Trainer:
     
         if len(device_ids) > 1:
             self.multi_gpu = True
-            self.model = torch.nn.DataParallel(model, device_ids=[0,2,3]) # train with multiple GPUs
+            self.model = torch.nn.DataParallel(model, device_ids=device_ids) # train with multiple GPUs
        
 
         self.model = self.model.to(self.device)
@@ -131,6 +132,7 @@ class Trainer:
         loss.backward()
         nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clipping)
         self.optimizer.step()
+        gc.collect()    
         
         return loss.data.tolist()
 
@@ -160,10 +162,10 @@ class Trainer:
                 bwd_inputs, bwd_outputs = bwd_inputs.to(self.device), bwd_outputs.to(self.device)
 
                 # self.model.module.switch_lstm("fwd")
-                loss += self._train_batch(fwd_inputs, fwd_outputs, switch_lang=curr, switch_lstm="fwd", share_weights=1)
+                loss += float(self._train_batch(fwd_inputs, fwd_outputs, switch_lang=curr, switch_lstm="fwd", share_weights=1))
 
                 # self.model.module.switch_lstm("bwd")
-                loss += self._train_batch(bwd_inputs, bwd_outputs, switch_lang=curr, switch_lstm="bwd", share_weights=-1)
+                loss += float(self._train_batch(bwd_inputs, bwd_outputs, switch_lang=curr, switch_lstm="bwd", share_weights=-1))
             
             cumloss+= loss
 
@@ -172,7 +174,8 @@ class Trainer:
                     batch_idx,
                     self.total_batches,
                     loss/batch_idx))
-                
+            
+            
         return cumloss 
 
 

@@ -38,7 +38,10 @@ def load_emb(directory, emb_file, dtype='float'):
     word2emb = dict()
 
     for i in range(count):
-        word, vec = embfile.readline().split(" ", 1)
+        try:
+            word, vec = embfile.readline().split(" ", 1)
+        except:
+            print("Failed")
 
         word2emb[word] = np.fromstring(vec, sep=' ', dtype=dtype)
     
@@ -57,8 +60,8 @@ def load_dict(dict_file):
     with open(dict_file, errors='surrogateescape') as f: 
         lines = list(f)
     
-    random.seed()
-    random.shuffle(lines)
+    # random.seed()
+    # random.shuffle(lines)
 
     for line in lines:
         src, tgt = line.split()

@@ -10,7 +10,6 @@ import collections
 import torch 
 import numpy as np
 
-
 def main_train(config): 
     
     logger = config.get_logger('train')

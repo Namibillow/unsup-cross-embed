@@ -94,6 +94,7 @@ if __name__ == "__main__":
         print(f"Start processing the text... ")
 
         for d in data:
+            print(f"-- procesisng {d.lang}: {d.file_path} --")
             with d.file_path.open(mode="r") as f:
                 sentences = [sentence.strip() for sentence in f]
         

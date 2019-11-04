@@ -180,6 +180,7 @@ if __name__ == "__main__":
     with save.open(mode=append_write) as f:
         f.write(f"-- {(datetime.datetime.now()).strftime('%Y-%m-%d %H:%M')} -- \n")
         f.write(f"Dictinary pairs used: {reached}/{len(src_word_list)}\n")
+        f.write(f"{len(correct)}/{reached} words were correct.\n")
         f.write(f"Accuracy with MAP@{args.num_ranks}: {acc[0]} \n")
         f.write(f"Accuracy with P@{args.num_ranks}: {acc[1]} \n")
     
