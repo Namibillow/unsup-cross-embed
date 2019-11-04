@@ -126,13 +126,15 @@ if __name__ == "__main__":
             src_emb = src_word2emb[src_word_list[i]]
             tgt_emb = tgt_word2emb[tgt_word_list[i]]
 
-            src_covered_emb_list.append(src_emb)
-            tgt_covered_emb_list.append(tgt_emb)
+            if len(src_emb) == 300 and len(tgt_emb) == 300:
+                src_covered_emb_list.append(src_emb)
+                tgt_covered_emb_list.append(tgt_emb)
 
-            src_covered_words.append(src_word_list[i])
-            tgt_covered_words.append(tgt_word_list[i])
+                src_covered_words.append(src_word_list[i])
+                tgt_covered_words.append(tgt_word_list[i])
+                
+                reached+=1
             
-            reached+=1
         else:
             oov+=1
 

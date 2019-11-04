@@ -236,7 +236,7 @@ class Trainer:
                                 "on this machine.".format(n_gpu_use, n_gpu))
             n_gpu_use = n_gpu
 
-        device = torch.device('cuda:0' if n_gpu_use > 0 else 'cpu')
+        device = torch.device('cuda:1' if n_gpu_use > 0 else 'cpu')
         
         self.logger.info("-- Total of %d GPU is used for the training --", n_gpu_use)
 

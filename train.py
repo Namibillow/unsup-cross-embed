@@ -126,6 +126,14 @@ if __name__ == "__main__":
         help="file path to  save the output"
     )
 
+    args.add_argument(
+        "-sn",
+        "--save_name",
+        type=str,
+        default=None,
+        help="Optional argument. Specify directory name to be saved "
+    )
+
     # custom cli options to modify configuration from default values give in config file
     CustomArgs = collections.namedtuple('CustomArgs', 'flags type target')
     options = [

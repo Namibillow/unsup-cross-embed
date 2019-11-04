@@ -60,8 +60,8 @@ def load_dict(dict_file):
     with open(dict_file, errors='surrogateescape') as f: 
         lines = list(f)
     
-    # random.seed()
-    # random.shuffle(lines)
+    random.seed()
+    random.shuffle(lines)
 
     for line in lines:
         src, tgt = line.split()

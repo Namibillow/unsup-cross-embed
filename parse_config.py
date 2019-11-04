@@ -39,7 +39,8 @@ class ConfigParser:
         self._config = _update_config(config, options, args)
 
         # set save directory where trained embedding and log will be saved
-        save_dir = Path(args.save) / ( config["src_data_prefix"] + "_" + config["tgt_data_prefix"])
+        save_dir_name = args.save_name if args.save_name else config["src_data_prefix"] + "_" + config["tgt_data_prefix"]
+        save_dir = Path(args.save) / save_dir_name
 
         timestamp = datetime.now().strftime(r'%m%d_%H%M%S') 
 
