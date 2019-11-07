@@ -87,6 +87,14 @@ if __name__ == "__main__":
         help="directory that contains all the necessary data"
     )
 
+    parser.add_argument(
+        "-s", 
+        "--save",
+        type=str,
+        default="evaluated",
+        help="save file name"
+    )
+
     args = parser.parse_args()
 
     directory = Path(args.directory)
@@ -175,7 +183,7 @@ if __name__ == "__main__":
     print(f"{len(correct)}/{reached} words were correct.")
 
 
-    save = directory / "evaluated.txt"
+    save = directory / (args.save + ".txt")
 
     append_write = 'a' if save.is_file() else 'w'
 

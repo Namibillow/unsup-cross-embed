@@ -37,9 +37,9 @@ then # Separate training
     $FASTBPE applybpe "${PREFIX}_${NUMV}_processed.txt" ${SRC_DATA} "${PREFIX}_codes"
 
     # get train vocabulary 
-    cat "${PREFIX}_${NUMV}_processed.txt" | $FASTBPE getvocab - > "${PREFIX}_${NUMV}.vocab_dict"
+    cat "${PREFIX}_${NUMV}_processed.txt" | $FASTBPE getvocab - > "${PREFIX}_${NUMV}.vocab"
 
-    NUMOFLINES=$(wc -l < "${PREFIX}_${NUMV}.vocab_dict")
+    NUMOFLINES=$(wc -l < "${PREFIX}_${NUMV}.vocab")
 
 else # joint training 
 
@@ -49,12 +49,12 @@ else # joint training
     $FASTBPE applybpe "${PREFIX}_${NUMV}_src_processed.txt" ${SRC_DATA} "${PREFIX}_codes"
     $FASTBPE applybpe "${PREFIX}_${NUMV}_tgt_processed.txt" ${TGT_DATA} "${PREFIX}_codes"
 
-    cat "${PREFIX}_${NUMV}_src_processed.txt" "${PREFIX}_${NUMV}_tgt_processed.txt" | $FASTBPE getvocab - > "${PREFIX}_${NUMV}.vocab_dict"
-    NUMOFLINES=$(wc -l < "${PREFIX}_${NUMV}.vocab_dict")
+    cat "${PREFIX}_${NUMV}_src_processed.txt" "${PREFIX}_${NUMV}_tgt_processed.txt" | $FASTBPE getvocab - > "${PREFIX}_${NUMV}.vocab"
+    NUMOFLINES=$(wc -l < "${PREFIX}_${NUMV}.vocab")
 fi 
 
 # truncate the frequency info
-cat "${PREFIX}_${NUMV}.vocab_dict" | cut -f1 -d ' ' | sponge "${PREFIX}_${NUMV}.vocab_dict"
+cat "${PREFIX}_${NUMV}.vocab" | cut -f1 -d ' ' | sponge "${PREFIX}_${NUMV}.vocab"
 
 echo "Language: ${1}
 original file path: ${3}

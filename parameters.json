@@ -4,11 +4,12 @@
     "n_gpu" : 1, 
 
     "optimizer": {
-        "type": "SGD",
+        "type": "ADAM",
         "args":{
-            "lr": 1.0,
+            "lr": 0.01,
             "weight_decay": 0,
-            "amsgrad": true
+            "amsgrad": false,
+            "lr_decay": 0
         }
     },
     "weight_init_range": [-0.1, 0.1], 

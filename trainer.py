@@ -1,6 +1,6 @@
 from pathlib import Path
 import time 
-import gc
+# import gc
 
 from numpy import inf
 import numpy as np
@@ -85,6 +85,11 @@ class Trainer:
             self.optimizer = optim.ASGD(self.model.parameters(), lr=args["lr"])
         elif opt_type == "ADAM":
             self.optimizer = optim.Adam(self.model.parameters(), lr=args["lr"], weight_decay=args["weight_decay"], amsgrad=args["amsgrad"])
+        elif opt_type == "ADAGRAD":
+            self.optimizer = optim.Adagrad(self.model.parameters(), lr=args["lr"], lr_decay=args["lr_decay"], weight_decay=args["weight_decay"])
+        elif opt_type == "RMSPROP":
+            self.optimizer = optim.RMSprop(self.model.parameters(), lr=args["lr"])
+
 
     def calc_loss(self, pred, correct):
         """
@@ -132,7 +137,7 @@ class Trainer:
         loss.backward()
         nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clipping)
         self.optimizer.step()
-        gc.collect()    
+        # gc.collect()    
         
         return loss.data.tolist()
 
@@ -202,16 +207,17 @@ class Trainer:
             self.logger.info("-- Train Epoch: {}/{} Total loss: {:.6f} --".format(epoch, self.epochs ,cumloss))
 
             improvement_rate = self.cumloss_new / self.cumloss_old
-            self.logger.debug("loss improvement rate: {:.4f}".format(improvement_rate))
+            self.logger.debug("loss improvement rate: {:.4f}%".format((1.0 - improvement_rate)*100))
 
+
+            if epoch % self.save_period == 0:
+                self._save_checkpoint(epoch, self.remove_models)
 
             if (improvement_rate > self.config["stop_threshold"]):
                 self.logger.info("Validation performance didn\'t improve for {} epochs. "
                                      "Training stops.".format(epoch))
                 break
         
-            if epoch % self.save_period == 0:
-                self._save_checkpoint(epoch, self.remove_models)
 
         return self.model.module if self.multi_gpu else self.model
 
@@ -236,7 +242,7 @@ class Trainer:
                                 "on this machine.".format(n_gpu_use, n_gpu))
             n_gpu_use = n_gpu
 
-        device = torch.device('cuda:1' if n_gpu_use > 0 else 'cpu')
+        device = torch.device('cuda:0' if n_gpu_use > 0 else 'cpu')
         
         self.logger.info("-- Total of %d GPU is used for the training --", n_gpu_use)
 
