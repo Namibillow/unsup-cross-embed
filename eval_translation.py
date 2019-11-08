@@ -95,6 +95,12 @@ if __name__ == "__main__":
         help="save file name"
     )
 
+    parser.add_argument(
+        "--shuffle",
+        action='store_true',
+        help="shuffle the dictionary"
+    )
+
     args = parser.parse_args()
 
     directory = Path(args.directory)
@@ -107,7 +113,7 @@ if __name__ == "__main__":
 
     # read dictionary 
     print("Reading dictionary")
-    src_word_list, tgt_word_list = load_dict(args.dict)
+    src_word_list, tgt_word_list = load_dict(args.dict, args.shuffle)
 
     num_words = len(src_word_list) if len(src_word_list) > len(src_word2emb) else len(src_word2emb)
     if not args.limit:

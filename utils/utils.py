@@ -47,7 +47,7 @@ def load_emb(directory, emb_file, dtype='float'):
     
     return word2emb
     
-def load_dict(dict_file):
+def load_dict(dict_file, shuffle=False):
     """
     - Read dictionary
     
@@ -60,8 +60,9 @@ def load_dict(dict_file):
     with open(dict_file, errors='surrogateescape') as f: 
         lines = list(f)
     
-    random.seed()
-    random.shuffle(lines)
+    if shuffle:
+        random.seed()
+        random.shuffle(lines)
 
     for line in lines:
         src, tgt = line.split()
