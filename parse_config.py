@@ -48,7 +48,7 @@ class ConfigParser:
 
         print(f"Result will be saved in {save_dir}")
         
-        self._save_dir = save_dir / 'embed' / exper_name / timestamp
+        self._save_dir = save_dir / 'best' / exper_name / timestamp
         self._log_dir = save_dir / 'log' / exper_name / timestamp
 
         self.save_dir.mkdir(parents=True, exist_ok=True)

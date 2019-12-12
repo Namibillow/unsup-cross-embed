@@ -1,26 +1,28 @@
 {
-    "name": "Bi-LSTM",
-
-    "n_gpu" : 1, 
-
-    "optimizer": {
-        "type": "ADAM",
-        "args":{
-            "lr": 0.01,
-            "weight_decay": 0,
-            "amsgrad": false,
-            "lr_decay": 0
-        }
-    },
-    "weight_init_range": [-0.1, 0.1], 
-    "dropout_rate": 0.3,
-    "num_layer": 2,
-    "emb_dim": 300,
-    "hidden_dim": 300,
-    "batch_size": 64,
-    "epoch": 10,
-    "save_period" : 1,
-    "grad_clipping": 5.0,
-    "stop_threshold": 0.99,
-    "remove_models": 1
+  "name": "Bi-LSTM",
+  "n_gpu": 1,
+  "optimizer": {
+    "type": "ASGD",
+    "args": {
+      "lr": "3.0",
+      "weight_decay": 0,
+      "amsgrad": false,
+      "lr_decay": 0,
+      "momentum": 0
+    }
+  },
+  "weight_init_range": [
+    -0.1,
+    0.1
+  ],
+  "dropout_rate": 0.3,
+  "num_layer": 2,
+  "emb_dim": 300,
+  "hidden_dim": 300,
+  "batch_size": 32,
+  "epoch": 20,
+  "save_period": 1,
+  "grad_clipping": 5,
+  "stop_threshold": 0.99,
+  "remove_models": 1
 }

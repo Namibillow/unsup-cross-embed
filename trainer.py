@@ -79,16 +79,17 @@ class Trainer:
             args: (dict) contains learning rate and other necessary info
 
         """
+        lr = float(args["lr"])
         if opt_type == "SGD":
-            self.optimizer = optim.SGD(self.model.parameters(), lr=args["lr"])
+            self.optimizer = optim.SGD(self.model.parameters(), lr=lr, momentum=float(args["momentum"]))
         elif opt_type == "ASGD":
-            self.optimizer = optim.ASGD(self.model.parameters(), lr=args["lr"])
+            self.optimizer = optim.ASGD(self.model.parameters(), lr=lr)
         elif opt_type == "ADAM":
-            self.optimizer = optim.Adam(self.model.parameters(), lr=args["lr"], weight_decay=args["weight_decay"], amsgrad=args["amsgrad"])
+            self.optimizer = optim.Adam(self.model.parameters(), lr=lr, weight_decay=args["weight_decay"], amsgrad=args["amsgrad"])
         elif opt_type == "ADAGRAD":
-            self.optimizer = optim.Adagrad(self.model.parameters(), lr=args["lr"], lr_decay=args["lr_decay"], weight_decay=args["weight_decay"])
+            self.optimizer = optim.Adagrad(self.model.parameters(), lr=lr, lr_decay=args["lr_decay"], weight_decay=args["weight_decay"])
         elif opt_type == "RMSPROP":
-            self.optimizer = optim.RMSprop(self.model.parameters(), lr=args["lr"])
+            self.optimizer = optim.RMSprop(self.model.parameters(), lr=lr)
 
 
     def calc_loss(self, pred, correct):
@@ -242,7 +243,7 @@ class Trainer:
                                 "on this machine.".format(n_gpu_use, n_gpu))
             n_gpu_use = n_gpu
 
-        device = torch.device('cuda:0' if n_gpu_use > 0 else 'cpu')
+        device = torch.device('cuda:1' if n_gpu_use > 0 else 'cpu')
         
         self.logger.info("-- Total of %d GPU is used for the training --", n_gpu_use)
 
